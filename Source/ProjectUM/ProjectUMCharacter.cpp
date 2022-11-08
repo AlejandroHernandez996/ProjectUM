@@ -14,6 +14,10 @@
 #include "Components/SphereComponent.h"
 #include "GameFramework/DamageType.h"
 #include "Kismet/GameplayStatics.h"
+#include "ProjectUMWeapon.h"
+#include "ProjectUMItem.h"
+#include "ProjectUMInventoryComponent.h"
+
 
 //////////////////////////////////////////////////////////////////////////
 // AProjectUMCharacter
@@ -36,6 +40,9 @@ AProjectUMCharacter::AProjectUMCharacter()
 	//Initialize attack rate
 	AttackRate = 1.0f;
 	bIsAttacking = false;
+
+	EquipRate = 5.0f;
+	bIsEquipping = false;
 
 	// set our turn rate for input
 	TurnRateGamepad = 50.f;
@@ -63,6 +70,11 @@ AProjectUMCharacter::AProjectUMCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	// Create an inventory
+	Inventory = CreateDefaultSubobject<UProjectUMInventoryComponent>("Inventory");
+	Inventory->Capacity = 20;
+	Inventory->SetIsReplicated(true);
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
@@ -83,17 +95,28 @@ AProjectUMCharacter::AProjectUMCharacter()
 		FistComponent->OnComponentEndOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapEnd);
 		FistComponent->OnComponentBeginOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapBegin);
 	}
+	
 }
 
 // Called after constructor
 void AProjectUMCharacter::BeginPlay() {
 	Super::BeginPlay();
 
-	// attach collision components to sockets based on transformation definitions
 	const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
-
 	FistComponent->AttachToComponent(GetMesh(), AttachmentRules, "hand_l");
 	FistComponent->SetHiddenInGame(false);
+
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		StartEquipping();
+	}
+	if (GetLocalRole() == ROLE_Authority) {
+
+		EquippedWeapon->GetWeaponComponent()->OnComponentHit.AddDynamic(this, &AProjectUMCharacter::OnAttackHit);
+		EquippedWeapon->GetWeaponComponent()->OnComponentEndOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapEnd);
+		EquippedWeapon->GetWeaponComponent()->OnComponentBeginOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapBegin);
+	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -249,6 +272,13 @@ void AProjectUMCharacter::StopFire()
 
 void AProjectUMCharacter::HandleFire_Implementation()
 {
+		FString msg = "?";
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+		for (auto& Item : Inventory->DefaultItems) {
+			FString healthMessage = "YO";
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
+			Inventory->AddItem(Item);
+		}
 	FVector spawnLocation = GetActorLocation() + (GetActorRotation().Vector() * 100.0f) + (GetActorUpVector() * 50.0f);
 	FRotator spawnRotation = GetActorRotation();
 
@@ -273,11 +303,23 @@ void AProjectUMCharacter::StartAttack()
 void AProjectUMCharacter::StopAttack()
 {
 	bIsAttacking = false;
+	if (AttackType == AttackTypeEnum::FIST) {
+		FistComponent->SetCollisionProfileName("NoCollision");
+	}
+	else {
+		EquippedWeapon->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
+	}
 }
 
 void AProjectUMCharacter::HandleAttack_Implementation()
 {
-	FistComponent->SetCollisionProfileName("Weapon");
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("ATTACK"));
+	if (AttackType == AttackTypeEnum::FIST) {
+		FistComponent->SetCollisionProfileName("Weapon");
+	}
+	else {
+		EquippedWeapon->GetWeaponComponent()->SetCollisionProfileName("Weapon");
+	}
 	PlayProjectUMCharacterAnimMontage(MeleeAttackMontage);
 }
 
@@ -294,12 +336,65 @@ void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedCo
 {
 	if (OtherActor->GetName() != this->GetName())
 	{
-		UGameplayStatics::ApplyDamage(OtherActor, 5.0f, GetInstigator()->Controller, this, UDamageType::StaticClass());
+		if (AttackType == AttackTypeEnum::FIST) {
+			UGameplayStatics::ApplyDamage(OtherActor, 5.0f, GetInstigator()->Controller, this, UDamageType::StaticClass());
+		}
+		else {
+			UGameplayStatics::ApplyDamage(OtherActor, 10.0f, GetInstigator()->Controller, this, UDamageType::StaticClass());
+		}
+
 	}
 }
 
 void AProjectUMCharacter::OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	FistComponent->SetCollisionProfileName("NoCollision");
+	if (AttackType == AttackTypeEnum::FIST) {
+		FistComponent->SetCollisionProfileName("NoCollision");
+	}
+	else {
+		EquippedWeapon->GetWeaponComponent()->SetCollisionProfileName("NoCollision");
+	}
+}
 
+void AProjectUMCharacter::StartEquipping()
+{
+	if (!bIsEquipping)
+	{
+		bIsEquipping = true;
+		UWorld* World = GetWorld();
+		World->GetTimerManager().SetTimer(EquippingTimer, this, &AProjectUMCharacter::StopEquipping, EquipRate, false);
+		HandleEquipWeapon();
+	}
+}
+
+void AProjectUMCharacter::StopEquipping()
+{
+	bIsEquipping = false;
+}
+
+void AProjectUMCharacter::HandleEquipWeapon_Implementation() {
+	
+		// attach collision components to sockets based on transformation definitions
+		const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
+
+		EquippedWeapon = GetWorld()->SpawnActor<AProjectUMWeapon>(WeaponClass);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("SPAWNING WEAPON"));
+
+		if (EquippedWeapon != nullptr) {
+			EquippedWeapon->GetCapsuleComponent()->SetupAttachment(RootComponent);
+			EquippedWeapon->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
+			EquippedWeapon->GetWeaponComponent()->SetCollisionProfileName("NoCollision");
+			EquippedWeapon->GetWeaponComponent()->SetNotifyRigidBodyCollision(false);
+
+			EquippedWeapon->GetCapsuleComponent()->AttachToComponent(GetMesh(), AttachmentRules, "hand_l");
+			EquippedWeapon->GetWeaponComponent()->SetHiddenInGame(false);
+			AttackType = AttackTypeEnum::MELEE_WEAPON;
+		}
+}
+
+void AProjectUMCharacter::UseItem_Implementation(UProjectUMItem* Item)
+{
+	if (Item) {
+		Item->Use(this);
+	}
 }

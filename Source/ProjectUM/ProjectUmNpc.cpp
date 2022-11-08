@@ -48,9 +48,6 @@ void AProjectUmNpc::OnRep_CurrentHealth()
 
 void AProjectUmNpc::OnHealthUpdate()
 {
-	FString healthMessage = FString::Printf(TEXT("%s now has %f health remaining."), *GetFName().ToString(), CurrentHealth);
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
-
 	//Functions that occur on all machines. 
 	/*
 		Any special functionality that should occur as a result of damage or death should be placed here.
@@ -72,3 +69,6 @@ float AProjectUmNpc::TakeDamage(float DamageTaken, struct FDamageEvent const& Da
 	return damageApplied;
 }
 
+void AProjectUmNpc::Interact() {
+
+}

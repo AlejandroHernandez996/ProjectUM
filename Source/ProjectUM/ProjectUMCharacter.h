@@ -23,24 +23,78 @@ class AProjectUMCharacter : public ACharacter
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
+		class USpringArmComponent* CameraBoom;
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FollowCamera;
+		class UCameraComponent* FollowCamera;
+
+	/** Inventory */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Iventory", meta = (AllowPrivateAccess = "true"))
+		class UProjectUMInventoryComponent* Inventory;
 
 public:
 	AProjectUMCharacter();
+
+	// Called after constructor
+	virtual void BeginPlay() override;
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
 	float TurnRateGamepad;
 
+	/** Returns CameraBoom subobject **/
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	/** Returns FollowCamera subobject **/
+	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	/** Property replication */
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** Getter for Max Health.*/
+	UFUNCTION(BlueprintPure, Category = "Health")
+		FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+
+	/** Getter for Current Health.*/
+	UFUNCTION(BlueprintPure, Category = "Health")
+		FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
+
+	/** Setter for Current Health. Clamps the value between 0 and MaxHealth and calls OnHealthUpdate. Should only be called on the server.*/
+	UFUNCTION(BlueprintCallable, Category = "Health")
+		void SetCurrentHealth(float healthValue);
+
+	/** Event for taking damage. Overridden from APawn.*/
+	UFUNCTION(BlueprintCallable, Category = "Health")
+		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
+	/** Getter for Current Health.*/
+	UFUNCTION(BlueprintPure, Category = "Attack")
+		FORCEINLINE bool IsAttacking() const { return bIsAttacking; }
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+		class UAnimMontage* MeleeAttackMontage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+		class USphereComponent* FistComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+		class AProjectUMWeapon* EquippedWeapon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
+		TSubclassOf<AProjectUMWeapon> WeaponClass;
+
+	UFUNCTION()
+		void OnAttackHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	UFUNCTION()
+		void OnAttackOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+		void OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 protected:
 	UPROPERTY()
 		TEnumAsByte<AttackTypeEnum::AttackType> AttackType;
-
-protected:
 
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
@@ -64,21 +118,8 @@ protected:
 
 	void CrouchStopped();
 
-protected:
-	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	// End of APawn interface
 
-public:
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-
-	/** Property replication */
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-protected:
 	/** The player's maximum health. This is the highest value of their health can be. This value is a value of the player's health, which starts at when spawned.*/
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
 		float MaxHealth;
@@ -94,28 +135,6 @@ protected:
 	/** Response to health being updated. Called on the server immediately after modification, and on clients in response to a RepNotify*/
 	void OnHealthUpdate();
 
-public:
-	/** Getter for Max Health.*/
-	UFUNCTION(BlueprintPure, Category = "Health")
-		FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
-
-	/** Getter for Current Health.*/
-	UFUNCTION(BlueprintPure, Category = "Health")
-		FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
-
-	/** Setter for Current Health. Clamps the value between 0 and MaxHealth and calls OnHealthUpdate. Should only be called on the server.*/
-	UFUNCTION(BlueprintCallable, Category = "Health")
-		void SetCurrentHealth(float healthValue);
-
-	/** Event for taking damage. Overridden from APawn.*/
-	UFUNCTION(BlueprintCallable, Category = "Health")
-		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
-
-	/** Getter for Current Health.*/
-	UFUNCTION(BlueprintPure, Category = "Attack")
-		FORCEINLINE bool IsAttacking() const { return bIsAttacking; }
-
-protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay|Projectile")
 		TSubclassOf<class AProjectUmProjectile> ProjectileClass;
 
@@ -163,26 +182,38 @@ protected:
 	UFUNCTION(Server, Reliable)
 		void HandleAttack();
 
-	UFUNCTION(NetMulticast, Reliable)
-	void PlayProjectUMCharacterAnimMontage(UAnimMontage* AnimMontage);
-
 	void HandleAttack_Implementation();
 
-public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-		class UAnimMontage* MeleeAttackMontage;
+	/** Delay between Attacks in seconds. Used to control Attack rate.*/
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+		float EquipRate;
+	/** A timer handle used for providing the Attack rate delay in-between attacks.*/
+	FTimerHandle EquippingTimer;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
-		class USphereComponent* FistComponent;
+	/** If true, you are in the process of firing projectiles. */
+	bool bIsEquipping;
 
-	// Called after constructor
-	virtual void BeginPlay() override;
+	/** Function for beginning attack.*/
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		void StartEquipping();
 
-	UFUNCTION()
-	void OnAttackHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-	UFUNCTION()
-	void OnAttackOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	UFUNCTION()
-	void OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	/** Function for ending attack. Once this is called, the player can use StartAttack again.*/
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		void StopEquipping();
+
+	/** Server function for attack.*/
+	UFUNCTION(Server, Reliable)
+		void HandleEquipWeapon();
+
+	void HandleEquipWeapon_Implementation();
+
+	UFUNCTION(NetMulticast, Reliable)
+		void PlayProjectUMCharacterAnimMontage(UAnimMontage* AnimMontage);
+
+	UFUNCTION(Server,Reliable, BlueprintCallable, Category = "Item")
+		void UseItem(class UProjectUMItem* Item);
+
+	void UseItem_Implementation(class UProjectUMItem* Item);
+
 };
 

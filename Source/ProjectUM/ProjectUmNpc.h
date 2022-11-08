@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "InteractableObjectInterface.h"
 #include "ProjectUmNpc.generated.h"
 
 UCLASS()
-class PROJECTUM_API AProjectUmNpc : public ACharacter
+class PROJECTUM_API AProjectUmNpc : public ACharacter, public IInteractableObjectInterface
 {
 	GENERATED_BODY()
 
@@ -59,4 +60,6 @@ public:
 	/** Event for taking damage. Overridden from APawn.*/
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
+	virtual void Interact() override;
 };
