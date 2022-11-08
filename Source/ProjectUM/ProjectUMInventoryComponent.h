@@ -19,15 +19,13 @@ class PROJECTUM_API UProjectUMInventoryComponent : public UActorComponent
 public:
 	UProjectUMInventoryComponent();
 
-	UFUNCTION(NetMulticast, Reliable)
+	UFUNCTION()
 	void AddItem(class UProjectUMItem* Item);
 	
-	void AddItem_Implementation(class UProjectUMItem* Item);
 
-	UFUNCTION(NetMulticast, Reliable)
+	UFUNCTION()
 	void RemoveItem(class UProjectUMItem* Item);
 
-	void RemoveItem_Implementation(class UProjectUMItem* Item);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 		int32 Capacity;

@@ -210,10 +210,36 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 		void PlayProjectUMCharacterAnimMontage(UAnimMontage* AnimMontage);
 
-	UFUNCTION(Server,Reliable, BlueprintCallable, Category = "Item")
-		void UseItem(class UProjectUMItem* Item);
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+		float UseItemRate;
 
-	void UseItem_Implementation(class UProjectUMItem* Item);
+	/** A timer handle used for providing the Attack rate delay in-between attacks.*/
+	FTimerHandle UseItemTimer;
 
+	/** If true, you are in the process of firing projectiles. */
+	bool bIsUsingItem;
+
+	UFUNCTION(BlueprintCallable, BlueprintCallable, Category = "Gameplay")
+		void StartUsingItem(class UProjectUMItem* Item);
+
+	/** Function for ending attack. Once this is called, the player can use StartAttack again.*/
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		void StopUsingItem();
+
+
+	UFUNCTION(Server, Reliable, Category = "Item")
+		void HandleUseItemServer(class UProjectUMItem* Item);
+
+	void HandleUseItemServer_Implementation(class UProjectUMItem* Item);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Item")
+		void HandleUseItemClient(class UProjectUMItem* Item);
+
+	void HandleUseItemClient_Implementation(class UProjectUMItem* Item);
+
+	UFUNCTION(NetMulticast, Reliable)
+		void SpawnItems();
+
+	void SpawnItems_Implementation();
 };
 

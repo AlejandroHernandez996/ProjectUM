@@ -13,7 +13,7 @@ UProjectUMInventoryComponent::UProjectUMInventoryComponent()
 	
 }
 
-void UProjectUMInventoryComponent::AddItem_Implementation(UProjectUMItem* Item)
+void UProjectUMInventoryComponent::AddItem(UProjectUMItem* Item)
 {
 	if (Items.Num() >= Capacity || !Item) {
 		return;
@@ -22,9 +22,11 @@ void UProjectUMInventoryComponent::AddItem_Implementation(UProjectUMItem* Item)
 	Item->World = GetWorld();
 	Items.Add(Item);
 	OnInventoryUpdated.Broadcast();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("ADD ITEM"));
+
 }
 
-void UProjectUMInventoryComponent::RemoveItem_Implementation(UProjectUMItem* Item)
+void UProjectUMInventoryComponent::RemoveItem(UProjectUMItem* Item)
 {
 	if (!Item) {
 		return;
@@ -33,6 +35,7 @@ void UProjectUMInventoryComponent::RemoveItem_Implementation(UProjectUMItem* Ite
 	Item->World = nullptr;
 	Items.Remove(Item);
 	OnInventoryUpdated.Broadcast();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("REMOVE ITEM"));
 }
 
 

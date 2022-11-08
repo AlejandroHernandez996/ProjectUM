@@ -15,9 +15,9 @@
 #include "GameFramework/DamageType.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectUMWeapon.h"
+#include "MyProjectUMFoodItem.h"
 #include "ProjectUMItem.h"
 #include "ProjectUMInventoryComponent.h"
-
 
 //////////////////////////////////////////////////////////////////////////
 // AProjectUMCharacter
@@ -43,6 +43,9 @@ AProjectUMCharacter::AProjectUMCharacter()
 
 	EquipRate = 5.0f;
 	bIsEquipping = false;
+
+	UseItemRate = 1.0f;
+	bIsUsingItem = false;
 
 	// set our turn rate for input
 	TurnRateGamepad = 50.f;
@@ -147,6 +150,9 @@ void AProjectUMCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 
 	// Handle attacking projectiles
 	PlayerInputComponent->BindAction("Primary Attack", IE_Pressed, this, &AProjectUMCharacter::StartAttack);
+
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AProjectUMCharacter::SpawnItems);
+
 
 }
 
@@ -272,13 +278,6 @@ void AProjectUMCharacter::StopFire()
 
 void AProjectUMCharacter::HandleFire_Implementation()
 {
-		FString msg = "?";
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-		for (auto& Item : Inventory->DefaultItems) {
-			FString healthMessage = "YO";
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
-			Inventory->AddItem(Item);
-		}
 	FVector spawnLocation = GetActorLocation() + (GetActorRotation().Vector() * 100.0f) + (GetActorUpVector() * 50.0f);
 	FRotator spawnRotation = GetActorRotation();
 
@@ -392,9 +391,39 @@ void AProjectUMCharacter::HandleEquipWeapon_Implementation() {
 		}
 }
 
-void AProjectUMCharacter::UseItem_Implementation(UProjectUMItem* Item)
+void AProjectUMCharacter::StartUsingItem(UProjectUMItem* Item)
 {
-	if (Item) {
+	if (!bIsUsingItem)
+	{
+		bIsUsingItem = true;
+		UWorld* World = GetWorld();
+		World->GetTimerManager().SetTimer(UseItemTimer, this, &AProjectUMCharacter::StopUsingItem, UseItemRate, false);
+		HandleUseItemServer(Item);
+	}
+}
+
+void AProjectUMCharacter::StopUsingItem()
+{
+		bIsUsingItem = false;
+}
+
+void AProjectUMCharacter::HandleUseItemServer_Implementation(UProjectUMItem* Item)
+{
 		Item->Use(this);
+		HandleUseItemClient(Item);
+}
+
+void AProjectUMCharacter::HandleUseItemClient_Implementation(UProjectUMItem* Item)
+{
+		Inventory->RemoveItem(Item);
+}
+
+void AProjectUMCharacter::SpawnItems_Implementation() {
+	FString msg = "?";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+	for (auto& Item : Inventory->DefaultItems) {
+		FString healthMessage = "YO";
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
+		Inventory->AddItem(Item);
 	}
 }
