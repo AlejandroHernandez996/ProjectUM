@@ -393,6 +393,9 @@ void AProjectUMCharacter::HandleEquipWeapon_Implementation() {
 
 void AProjectUMCharacter::StartUsingItem(UProjectUMItem* Item)
 {
+	if (Item == nullptr) {
+		return;
+	}
 	if (!bIsUsingItem)
 	{
 		bIsUsingItem = true;
@@ -415,7 +418,7 @@ void AProjectUMCharacter::HandleUseItemServer_Implementation(UProjectUMItem* Ite
 
 void AProjectUMCharacter::HandleUseItemClient_Implementation(UProjectUMItem* Item)
 {
-		Inventory->RemoveItem(Item);
+	Item->Use(this);
 }
 
 void AProjectUMCharacter::SpawnItems_Implementation() {

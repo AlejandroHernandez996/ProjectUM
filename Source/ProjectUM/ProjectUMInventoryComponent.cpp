@@ -3,6 +3,7 @@
 
 #include "ProjectUMInventoryComponent.h"
 #include "ProjectUMItem.h"
+#include "EquippableSlotsEnum.h"
 #include "Engine/Engine.h"
 
 // Sets default values for this component's properties
@@ -36,6 +37,44 @@ void UProjectUMInventoryComponent::RemoveItem(UProjectUMItem* Item)
 	Items.Remove(Item);
 	OnInventoryUpdated.Broadcast();
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("REMOVE ITEM"));
+}
+
+void UProjectUMInventoryComponent::EquipItem(class UProjectUMEquippableItem* Item, EEquippableSlotsEnum EquipSlot) {
+	if (EquipSlot == EEquippableSlotsEnum::CHEST && ChestSlot != Item) {
+		ChestSlot = Item;
+	}
+
+	else if (EquipSlot == EEquippableSlotsEnum::LEGS && LegsSlot != Item) {
+		LegsSlot = Item;
+	}
+
+	else if (EquipSlot == EEquippableSlotsEnum::HEAD && HeadSlot != Item) {
+		HeadSlot = Item;
+	}
+	else {
+		return;
+	}
+	Items.Remove(Item);
+	OnInventoryUpdated.Broadcast();
+}
+
+void UProjectUMInventoryComponent::UnEquipItem(class UProjectUMEquippableItem* Item, EEquippableSlotsEnum EquipSlot) {
+	if (EquipSlot == EEquippableSlotsEnum::CHEST && ChestSlot == Item) {
+		ChestSlot = nullptr;
+	}
+
+	else if (EquipSlot == EEquippableSlotsEnum::LEGS && LegsSlot == Item) {
+		LegsSlot = nullptr;
+	}
+
+	else if (EquipSlot == EEquippableSlotsEnum::HEAD && HeadSlot == Item) {
+		HeadSlot = nullptr;
+	}
+	else {
+		return;
+	}
+	Items.Add(Item);
+	OnInventoryUpdated.Broadcast();
 }
 
 

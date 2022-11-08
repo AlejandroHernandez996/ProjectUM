@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "ProjectUMEquippableItem.h"
+#include "EquippableSlotsEnum.h"
 #include "ProjectUMInventoryComponent.generated.h"
 
 // Blueprint will bind to update the UI
@@ -26,6 +28,11 @@ public:
 	UFUNCTION()
 	void RemoveItem(class UProjectUMItem* Item);
 
+	UFUNCTION()
+		void EquipItem(class UProjectUMEquippableItem* Item, EEquippableSlotsEnum EquipSlot);
+
+	UFUNCTION()
+		void UnEquipItem(class UProjectUMEquippableItem* Item, EEquippableSlotsEnum EquipSlot);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 		int32 Capacity;
@@ -38,4 +45,13 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
 		TArray<class UProjectUMItem*> Items;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
+		class UProjectUMEquippableItem* HeadSlot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
+		class UProjectUMEquippableItem* ChestSlot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
+		class UProjectUMEquippableItem* LegsSlot;
 };

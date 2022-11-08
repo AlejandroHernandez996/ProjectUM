@@ -11,4 +11,6 @@ void UMyProjectUMFoodItem::Use(class AProjectUMCharacter* CharacterUser) {
 
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("EATING FOOD"));
 	UGameplayStatics::ApplyDamage(CharacterUser, -10.0f, nullptr, nullptr, UDamageType::StaticClass());
+	CharacterUser->GetInventory()->RemoveItem(this);
+
 }

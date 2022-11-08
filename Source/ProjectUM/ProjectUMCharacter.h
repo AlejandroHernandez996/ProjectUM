@@ -36,6 +36,8 @@ class AProjectUMCharacter : public ACharacter
 public:
 	AProjectUMCharacter();
 
+	UFUNCTION()
+		UProjectUMInventoryComponent* GetInventory() { return Inventory; }
 	// Called after constructor
 	virtual void BeginPlay() override;
 
@@ -232,7 +234,7 @@ protected:
 
 	void HandleUseItemServer_Implementation(class UProjectUMItem* Item);
 
-	UFUNCTION(NetMulticast, Reliable, Category = "Item")
+	UFUNCTION(Client, Reliable, Category = "Item")
 		void HandleUseItemClient(class UProjectUMItem* Item);
 
 	void HandleUseItemClient_Implementation(class UProjectUMItem* Item);
