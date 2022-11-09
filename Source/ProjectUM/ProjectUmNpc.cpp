@@ -52,6 +52,9 @@ void AProjectUmNpc::OnHealthUpdate()
 	/*
 		Any special functionality that should occur as a result of damage or death should be placed here.
 	*/
+	if (CurrentHealth <= 0.0f) {
+		Destroy();
+	}
 }
 void AProjectUmNpc::SetCurrentHealth(float healthValue)
 {
@@ -64,6 +67,7 @@ void AProjectUmNpc::SetCurrentHealth(float healthValue)
 
 float AProjectUmNpc::TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("npc tooK damage"));
 	float damageApplied = CurrentHealth - DamageTaken;
 	SetCurrentHealth(damageApplied);
 	return damageApplied;

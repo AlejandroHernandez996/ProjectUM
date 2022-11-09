@@ -54,4 +54,7 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
 		class UProjectUMEquippableItem* LegsSlot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
+		class UProjectUMEquippableItem* HandSlot;
 };

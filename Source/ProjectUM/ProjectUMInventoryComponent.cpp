@@ -51,6 +51,9 @@ void UProjectUMInventoryComponent::EquipItem(class UProjectUMEquippableItem* Ite
 	else if (EquipSlot == EEquippableSlotsEnum::HEAD && HeadSlot != Item) {
 		HeadSlot = Item;
 	}
+	else if (EquipSlot == EEquippableSlotsEnum::HAND && HandSlot != Item) {
+		HandSlot = Item;
+	}
 	else {
 		return;
 	}
@@ -69,6 +72,9 @@ void UProjectUMInventoryComponent::UnEquipItem(class UProjectUMEquippableItem* I
 
 	else if (EquipSlot == EEquippableSlotsEnum::HEAD && HeadSlot == Item) {
 		HeadSlot = nullptr;
+	}
+	else if (EquipSlot == EEquippableSlotsEnum::HAND && HandSlot == Item) {
+		HandSlot = nullptr;
 	}
 	else {
 		return;

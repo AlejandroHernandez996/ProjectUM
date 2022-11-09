@@ -10,5 +10,6 @@ enum class EEquippableSlotsEnum : uint8
 {
 	HEAD,
 	CHEST,
-	LEGS
+	LEGS,
+	HAND
 };

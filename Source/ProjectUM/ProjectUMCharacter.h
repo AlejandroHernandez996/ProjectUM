@@ -82,8 +82,27 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
 		class AProjectUMWeapon* EquippedWeapon;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+		class AProjectUMEquipment* EquippedHead;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+		class AProjectUMEquipment* EquippedChest;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+		class AProjectUMEquipment* EquippedLegs;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
 		TSubclassOf<AProjectUMWeapon> WeaponClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
+		TSubclassOf<AProjectUMEquipment> HeadClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
+		TSubclassOf<AProjectUMEquipment> ChestClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
+		TSubclassOf<AProjectUMEquipment> LegsClass;
+
 
 	UFUNCTION()
 		void OnAttackHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
@@ -93,6 +112,18 @@ public:
 
 	UFUNCTION()
 		void OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UFUNCTION()
+	void AttachWeapon(TSubclassOf<AProjectUMWeapon> Weapon);
+
+	UFUNCTION()
+	void DeAttachWeapon();
+
+	UFUNCTION()
+		void AttachArmor(TSubclassOf<AProjectUMEquipment> Armor, EEquippableSlotsEnum EquipSlot);
+
+	UFUNCTION()
+		void DeAttachArmor(EEquippableSlotsEnum EquipSlot);
 
 protected:
 	UPROPERTY()
@@ -197,17 +228,21 @@ protected:
 
 	/** Function for beginning attack.*/
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-		void StartEquipping();
+		void StartEquipping(EEquippableSlotsEnum EquipSlot);
 
 	/** Function for ending attack. Once this is called, the player can use StartAttack again.*/
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 		void StopEquipping();
 
 	/** Server function for attack.*/
-	UFUNCTION(Server, Reliable)
+	UFUNCTION()
+		void HandleEquip(EEquippableSlotsEnum EquipSlot);
+
+	UFUNCTION()
 		void HandleEquipWeapon();
 
-	void HandleEquipWeapon_Implementation();
+	UFUNCTION()
+		void HandleEquipArmor(EEquippableSlotsEnum EquipSlot);
 
 	UFUNCTION(NetMulticast, Reliable)
 		void PlayProjectUMCharacterAnimMontage(UAnimMontage* AnimMontage);
@@ -234,7 +269,7 @@ protected:
 
 	void HandleUseItemServer_Implementation(class UProjectUMItem* Item);
 
-	UFUNCTION(Client, Reliable, Category = "Item")
+	UFUNCTION(NetMulticast, Reliable, Category = "Item")
 		void HandleUseItemClient(class UProjectUMItem* Item);
 
 	void HandleUseItemClient_Implementation(class UProjectUMItem* Item);
