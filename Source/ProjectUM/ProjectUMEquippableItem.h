@@ -12,12 +12,16 @@ UCLASS()
 class PROJECTUM_API UProjectUMEquippableItem : public UProjectUMItem
 {
 	GENERATED_BODY()
+
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 		EEquippableSlotsEnum EquipSlot = EEquippableSlotsEnum::HEAD;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
 		TSubclassOf<AProjectUMEquipment> EquipmentClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+		float HealthAmount;
 
 	virtual void Use(class AProjectUMCharacter* CharacterUser) override;
 };

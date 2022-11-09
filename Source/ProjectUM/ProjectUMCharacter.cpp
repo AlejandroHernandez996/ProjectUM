@@ -29,7 +29,8 @@ AProjectUMCharacter::AProjectUMCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
 	//Initialize the player's Health
-	MaxHealth = 100.0f;
+	BaseMaxHealth = 100.0f;
+	MaxHealth = BaseMaxHealth;
 	CurrentHealth = MaxHealth;
 
 	//Initialize projectile class
@@ -211,11 +212,17 @@ void AProjectUMCharacter::GetLifetimeReplicatedProps(TArray <FLifetimeProperty>&
 
 	//Replicate current health.
 	DOREPLIFETIME(AProjectUMCharacter, CurrentHealth);
+	DOREPLIFETIME(AProjectUMCharacter, MaxHealth);
 }
 
 void AProjectUMCharacter::OnRep_CurrentHealth()
 {
 	OnHealthUpdate();
+}
+
+void AProjectUMCharacter::OnRep_MaxHealth()
+{
+	
 }
 
 void AProjectUMCharacter::OnHealthUpdate()
@@ -231,7 +238,24 @@ void AProjectUMCharacter::OnHealthUpdate()
 		if (CurrentHealth == 0) {
 			Destroy();
 		}
+		
 }
+
+void AProjectUMCharacter::SetCurrentMaxHealth(float healthValue)
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		MaxHealth = FMath::Clamp(healthValue, 0.f, 1000.f);
+	}
+	FString healthMessage = FString::Printf(TEXT("%s now has %f max health remaining."), *GetFName().ToString(), MaxHealth);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, healthMessage);
+	if (CurrentHealth > MaxHealth) {
+		FString fd = FString::Printf(TEXT("%s now has %f health remaining due to being higher than max health."), *GetFName().ToString(), CurrentHealth);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, fd);
+		SetCurrentHealth(MaxHealth);
+	}
+}
+
 void AProjectUMCharacter::SetCurrentHealth(float healthValue)
 {
 	if (GetLocalRole() == ROLE_Authority)
@@ -507,12 +531,24 @@ void AProjectUMCharacter::AttachArmor(TSubclassOf<AProjectUMEquipment> Armor, EE
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 	if (EquipSlot == EEquippableSlotsEnum::HEAD) {
 		HeadClass = Armor;
+		if (GetLocalRole() == ROLE_Authority && Inventory->HeadSlot)
+		{
+			SetCurrentMaxHealth(MaxHealth + Inventory->HeadSlot->HealthAmount);
+		}
 	}
 	else if (EquipSlot == EEquippableSlotsEnum::CHEST) {
 		ChestClass = Armor;
+		if (GetLocalRole() == ROLE_Authority && Inventory->ChestSlot)
+		{
+			SetCurrentMaxHealth(MaxHealth + Inventory->ChestSlot->HealthAmount);
+		}
 	}
 	else if (EquipSlot == EEquippableSlotsEnum::LEGS) {
 		LegsClass = Armor;
+		if (GetLocalRole() == ROLE_Authority && Inventory->LegsSlot)
+		{
+			SetCurrentMaxHealth(MaxHealth + Inventory->LegsSlot->HealthAmount);
+		}
 	}
 	else {
 		return;
@@ -524,12 +560,24 @@ void AProjectUMCharacter::DeAttachArmor(EEquippableSlotsEnum EquipSlot) {
 	FString msg = "DETTACHING ARMOR";
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 	if (EquipSlot == EEquippableSlotsEnum::HEAD && EquippedHead) {
+		if (GetLocalRole() == ROLE_Authority && Inventory->HeadSlot)
+		{
+			SetCurrentMaxHealth(MaxHealth - Inventory->HeadSlot->HealthAmount);
+		}
 		EquippedHead->Destroy();
 	}
 	else if (EquipSlot == EEquippableSlotsEnum::CHEST && EquippedChest) {
+		if (GetLocalRole() == ROLE_Authority && Inventory->ChestSlot)
+		{
+			SetCurrentMaxHealth(MaxHealth - Inventory->ChestSlot->HealthAmount);
+		}
 		EquippedChest->Destroy();
 	}
 	else if (EquipSlot == EEquippableSlotsEnum::LEGS && EquippedLegs) {
+		if (GetLocalRole() == ROLE_Authority && Inventory->LegsSlot)
+		{
+			SetCurrentMaxHealth(MaxHealth - Inventory->LegsSlot->HealthAmount);
+		}
 		EquippedLegs->Destroy();
 	}
 	else {

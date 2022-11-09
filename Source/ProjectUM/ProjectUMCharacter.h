@@ -65,6 +65,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		void SetCurrentHealth(float healthValue);
 
+	UFUNCTION(BlueprintCallable, Category = "Health")
+		void SetCurrentMaxHealth(float healthValue);
+
 	/** Event for taking damage. Overridden from APawn.*/
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
@@ -154,8 +157,11 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	/** The player's maximum health. This is the highest value of their health can be. This value is a value of the player's health, which starts at when spawned.*/
-	UPROPERTY(EditDefaultsOnly, Category = "Health")
+	UPROPERTY(EditDefaultsOnly, Category = "Health", ReplicatedUsing = OnRep_MaxHealth)
 		float MaxHealth;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Health")
+		float BaseMaxHealth;
 
 	/** The player's current health. When reduced to 0, they are considered dead.*/
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentHealth)
@@ -164,6 +170,10 @@ protected:
 	/** RepNotify for changes made to current health.*/
 	UFUNCTION()
 		void OnRep_CurrentHealth();
+
+	/** RepNotify for changes made to current health.*/
+	UFUNCTION()
+		void OnRep_MaxHealth();
 
 	/** Response to health being updated. Called on the server immediately after modification, and on clients in response to a RepNotify*/
 	void OnHealthUpdate();
