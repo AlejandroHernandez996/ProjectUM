@@ -43,10 +43,10 @@ AProjectUMCharacter::AProjectUMCharacter()
 	AttackRate = 1.0f;
 	bIsAttacking = false;
 
-	EquipRate = .5f;
+	EquipRate = .25f;
 	bIsEquipping = false;
 
-	UseItemRate = 1.0f;
+	UseItemRate = .5f;
 	bIsUsingItem = false;
 
 	// set our turn rate for input
@@ -94,6 +94,11 @@ AProjectUMCharacter::AProjectUMCharacter()
 	FistComponent->SetCollisionProfileName("NoCollision");
 	FistComponent->SetNotifyRigidBodyCollision(false);
 
+	InteractComponent = CreateDefaultSubobject<USphereComponent>(TEXT("InteractCollider"));
+	InteractComponent->SetupAttachment(RootComponent);
+	InteractComponent->SetCollisionProfileName("NoCollision");
+	InteractComponent->SetNotifyRigidBodyCollision(false);
+
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		FistComponent->OnComponentHit.AddDynamic(this, &AProjectUMCharacter::OnAttackHit);
@@ -101,6 +106,11 @@ AProjectUMCharacter::AProjectUMCharacter()
 		FistComponent->OnComponentBeginOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapBegin);
 	}
 	
+	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::HAND, "hand_l");
+	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::HEAD, "head");
+	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::CHEST, "spine_05");
+	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::LEGS, "pelvis");
+
 }
 
 // Called after constructor
@@ -141,8 +151,7 @@ void AProjectUMCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	// Handle attacking projectiles
 	PlayerInputComponent->BindAction("Primary Attack", IE_Pressed, this, &AProjectUMCharacter::StartAttack);
 
-	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AProjectUMCharacter::SpawnItems);
-
+	PlayerInputComponent->BindAction("Spawn Items", IE_Pressed, this, &AProjectUMCharacter::SpawnItems);
 
 }
 
@@ -315,25 +324,22 @@ void AProjectUMCharacter::StartAttack()
 void AProjectUMCharacter::StopAttack()
 {
 	bIsAttacking = false;
-	if (AttackType == AttackTypeEnum::FIST) {
+	if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)) {
 		FistComponent->SetCollisionProfileName("NoCollision");
 	}
 	else {
-		EquippedWeapon->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
+		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
 	}
 }
 
 void AProjectUMCharacter::HandleAttack_Implementation()
 {
-	if (!EquippedWeapon && AttackType == AttackTypeEnum::MELEE_WEAPON) {
-		return;
-	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("ATTACK"));
-	if (AttackType == AttackTypeEnum::FIST) {
+	if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)){
 		FistComponent->SetCollisionProfileName("Weapon");
 	}
 	else {
-		EquippedWeapon->GetWeaponComponent()->SetCollisionProfileName("Weapon");
+		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetHitboxComponent()->SetCollisionProfileName("Weapon");
 	}
 	PlayProjectUMCharacterAnimMontage(MeleeAttackMontage);
 }
@@ -349,12 +355,9 @@ void AProjectUMCharacter::OnAttackHit(UPrimitiveComponent* HitComponent, AActor*
 
 void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!EquippedWeapon && AttackType == AttackTypeEnum::MELEE_WEAPON) {
-		return;
-	}
 	if (OtherActor->GetName() != this->GetName())
 	{
-		if (AttackType == AttackTypeEnum::FIST) {
+		if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)) {
 			UGameplayStatics::ApplyDamage(OtherActor, 5.0f, GetInstigator()->Controller, this, UDamageType::StaticClass());
 		}
 		else {
@@ -366,14 +369,11 @@ void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedCo
 
 void AProjectUMCharacter::OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (!EquippedWeapon && AttackType == AttackTypeEnum::MELEE_WEAPON) {
-		return;
-	}
-	if (AttackType == AttackTypeEnum::FIST) {
+	if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)) {
 		FistComponent->SetCollisionProfileName("NoCollision");
 	}
 	else {
-		EquippedWeapon->GetWeaponComponent()->SetCollisionProfileName("NoCollision");
+		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
 	}
 }
 
@@ -394,79 +394,24 @@ void AProjectUMCharacter::StopEquipping()
 }
 
 void AProjectUMCharacter::HandleEquip(EEquippableSlotsEnum EquipSlot) {
+		FString msg = "HANDLING EQUIP ARMOR";
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 
-	if (EquipSlot == EEquippableSlotsEnum::HAND) {
-		HandleEquipWeapon();
-	}
-	else {
-		HandleEquipArmor(EquipSlot);
-	}
-}
-
-void AProjectUMCharacter::HandleEquipArmor(EEquippableSlotsEnum EquipSlot) {
-	const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
-	FString msg = "HANDLING EQUIP ARMOR";
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-	if (EquipSlot == EEquippableSlotsEnum::HEAD) {
-		// attach collision components to sockets based on transformation definitions
-
-		EquippedHead = GetWorld()->SpawnActor<AProjectUMEquipment>(HeadClass);
-
-		if (EquippedHead != nullptr) {
-			EquippedHead->GetCapsuleComponent()->SetupAttachment(RootComponent);
-			EquippedHead->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
-			EquippedHead->GetCapsuleComponent()->AttachToComponent(GetMesh(), AttachmentRules, "head");
-		}
-	}
-	else if (EquipSlot == EEquippableSlotsEnum::CHEST) {
-		EquippedChest = GetWorld()->SpawnActor<AProjectUMEquipment>(ChestClass);
-
-		if (EquippedChest != nullptr) {
-			EquippedHead->GetCapsuleComponent()->SetupAttachment(RootComponent);
-			EquippedChest->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
-			EquippedChest->GetCapsuleComponent()->AttachToComponent(GetMesh(), AttachmentRules, "spine_05");
-		}
-	}
-	else if (EquipSlot == EEquippableSlotsEnum::LEGS) {
-		EquippedLegs = GetWorld()->SpawnActor<AProjectUMEquipment>(LegsClass);
-
-		if (EquippedLegs != nullptr) {
-			EquippedLegs->GetCapsuleComponent()->SetupAttachment(RootComponent);
-			EquippedLegs->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
-			EquippedLegs->GetCapsuleComponent()->AttachToComponent(GetMesh(), AttachmentRules, "pelvis");
-		}
-	}
-	else {
-		return;
-	}
-	
-}
-
-
-void AProjectUMCharacter::HandleEquipWeapon() {
-	
-		// attach collision components to sockets based on transformation definitions
 		const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
-
-		EquippedWeapon = GetWorld()->SpawnActor<AProjectUMWeapon>(WeaponClass);
-
-		if (EquippedWeapon != nullptr) {
-			EquippedWeapon->GetCapsuleComponent()->SetupAttachment(RootComponent);
-			EquippedWeapon->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
-			EquippedWeapon->GetWeaponComponent()->SetCollisionProfileName("NoCollision");
-			EquippedWeapon->GetWeaponComponent()->SetNotifyRigidBodyCollision(false);
-
-			EquippedWeapon->GetCapsuleComponent()->AttachToComponent(GetMesh(), AttachmentRules, "hand_l");
-			EquippedWeapon->GetWeaponComponent()->SetHiddenInGame(false);
-			AttackType = AttackTypeEnum::MELEE_WEAPON;
-		}
-
-		if (GetLocalRole() == ROLE_Authority) {
-			EquippedWeapon->GetWeaponComponent()->OnComponentHit.AddDynamic(this, &AProjectUMCharacter::OnAttackHit);
-			EquippedWeapon->GetWeaponComponent()->OnComponentEndOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapEnd);
-			EquippedWeapon->GetWeaponComponent()->OnComponentBeginOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapBegin);
+		EquippedItemMap.Add(EquipSlot, GetWorld()->SpawnActor<AProjectUMEquipment>(EquipmentClassMap.FindRef(EquipSlot)));
+		EquippedItemMap.FindRef(EquipSlot)->GetCapsuleComponent()->SetupAttachment(RootComponent);
+		EquippedItemMap.FindRef(EquipSlot)->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
+		EquippedItemMap.FindRef(EquipSlot)->GetCapsuleComponent()->AttachToComponent(GetMesh(), AttachmentRules, EquipSlotSkeletonMapping.FindRef(EquipSlot));
+		if (EquipSlot == EEquippableSlotsEnum::HAND) {
+			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
+			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->SetNotifyRigidBodyCollision(false);
+			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->SetHiddenInGame(false);
+			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->OnComponentHit.AddDynamic(this, &AProjectUMCharacter::OnAttackHit);
+			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->OnComponentEndOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapEnd);
+			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->OnComponentBeginOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapBegin);
 		}
 }
+
 
 void AProjectUMCharacter::StartUsingItem(UProjectUMItem* Item)
 {
@@ -510,77 +455,25 @@ void AProjectUMCharacter::SpawnItems_Implementation() {
 	}
 }
 
-void AProjectUMCharacter::AttachWeapon(TSubclassOf<AProjectUMWeapon> Weapon) {
+void AProjectUMCharacter::AttachEquipment(TSubclassOf<AProjectUMEquipment> Equipment, EEquippableSlotsEnum EquipSlot) {
+	if (GetLocalRole() == ROLE_Authority) {
 
-	WeaponClass = Weapon;
-	StartEquipping(EEquippableSlotsEnum::HAND);
-}
-
-void AProjectUMCharacter::DeAttachWeapon() {
-	if (EquippedWeapon) {
-		FString msg = "DESTRUCITON";
+		FString msg = "ATTACHING ARMOR";
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-		EquippedWeapon->Destroy();
-		AttackType = AttackTypeEnum::FIST;
 
+		EquipmentClassMap.Add(EquipSlot, Equipment);
+		SetCurrentMaxHealth(MaxHealth + Inventory->EquipmentMap.FindRef(EquipSlot)->HealthAmount);
+		StartEquipping(EquipSlot);
 	}
 }
 
-void AProjectUMCharacter::AttachArmor(TSubclassOf<AProjectUMEquipment> Armor, EEquippableSlotsEnum EquipSlot) {
-	FString msg = "ATTACHING ARMOR";
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-	if (EquipSlot == EEquippableSlotsEnum::HEAD) {
-		HeadClass = Armor;
-		if (GetLocalRole() == ROLE_Authority && Inventory->HeadSlot)
-		{
-			SetCurrentMaxHealth(MaxHealth + Inventory->HeadSlot->HealthAmount);
-		}
-	}
-	else if (EquipSlot == EEquippableSlotsEnum::CHEST) {
-		ChestClass = Armor;
-		if (GetLocalRole() == ROLE_Authority && Inventory->ChestSlot)
-		{
-			SetCurrentMaxHealth(MaxHealth + Inventory->ChestSlot->HealthAmount);
-		}
-	}
-	else if (EquipSlot == EEquippableSlotsEnum::LEGS) {
-		LegsClass = Armor;
-		if (GetLocalRole() == ROLE_Authority && Inventory->LegsSlot)
-		{
-			SetCurrentMaxHealth(MaxHealth + Inventory->LegsSlot->HealthAmount);
-		}
-	}
-	else {
-		return;
-	}
-	StartEquipping(EquipSlot);
-}
+void AProjectUMCharacter::DeAttachEquipment(EEquippableSlotsEnum EquipSlot) {
+	if (GetLocalRole() == ROLE_Authority) {
 
-void AProjectUMCharacter::DeAttachArmor(EEquippableSlotsEnum EquipSlot) {
-	FString msg = "DETTACHING ARMOR";
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-	if (EquipSlot == EEquippableSlotsEnum::HEAD && EquippedHead) {
-		if (GetLocalRole() == ROLE_Authority && Inventory->HeadSlot)
-		{
-			SetCurrentMaxHealth(MaxHealth - Inventory->HeadSlot->HealthAmount);
-		}
-		EquippedHead->Destroy();
-	}
-	else if (EquipSlot == EEquippableSlotsEnum::CHEST && EquippedChest) {
-		if (GetLocalRole() == ROLE_Authority && Inventory->ChestSlot)
-		{
-			SetCurrentMaxHealth(MaxHealth - Inventory->ChestSlot->HealthAmount);
-		}
-		EquippedChest->Destroy();
-	}
-	else if (EquipSlot == EEquippableSlotsEnum::LEGS && EquippedLegs) {
-		if (GetLocalRole() == ROLE_Authority && Inventory->LegsSlot)
-		{
-			SetCurrentMaxHealth(MaxHealth - Inventory->LegsSlot->HealthAmount);
-		}
-		EquippedLegs->Destroy();
-	}
-	else {
-		return;
+		FString msg = "DETTACHING ARMOR";
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+		EquipmentClassMap.FindRef(EquipSlot) = nullptr;
+		EquippedItemMap.FindRef(EquipSlot)->Destroy();
+		SetCurrentMaxHealth(MaxHealth - Inventory->EquipmentMap.FindRef(EquipSlot)->HealthAmount);
 	}
 }

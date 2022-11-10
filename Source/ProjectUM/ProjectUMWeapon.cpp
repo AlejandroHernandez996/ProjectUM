@@ -7,11 +7,11 @@
 // Sets default values
 AProjectUMWeapon::AProjectUMWeapon()
 {
-	WeaponComponent = CreateDefaultSubobject<USphereComponent>(TEXT("HandCollider"));
-	WeaponComponent->SetupAttachment(RootComponent);
-	WeaponComponent->SetCollisionProfileName("NoCollision");
-	WeaponComponent->SetHiddenInGame(false);
-	WeaponComponent->SetNotifyRigidBodyCollision(false);
+	HitboxComponent = CreateDefaultSubobject<USphereComponent>(TEXT("HandCollider"));
+	HitboxComponent->SetupAttachment(RootComponent);
+	HitboxComponent->SetCollisionProfileName("NoCollision");
+	HitboxComponent->SetHiddenInGame(false);
+	HitboxComponent->SetNotifyRigidBodyCollision(false);
 	bReplicates = true;
 }
 

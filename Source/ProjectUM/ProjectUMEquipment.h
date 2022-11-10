@@ -22,4 +22,11 @@ protected:
 public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+		class USphereComponent* HitboxComponent;
+public:
+	UFUNCTION()
+		USphereComponent* GetHitboxComponent() { return HitboxComponent; };
 };

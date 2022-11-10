@@ -47,14 +47,8 @@ public:
 		TArray<class UProjectUMItem*> Items;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
-		class UProjectUMEquippableItem* HeadSlot;
+		TMap<EEquippableSlotsEnum, UProjectUMEquippableItem*> EquipmentMap;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
-		class UProjectUMEquippableItem* ChestSlot;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
-		class UProjectUMEquippableItem* LegsSlot;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
-		class UProjectUMEquippableItem* HandSlot;
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+		UProjectUMEquippableItem* GetEquipmentItem(EEquippableSlotsEnum EquipSlot) { return EquipmentMap.FindRef(EquipSlot); }
 };

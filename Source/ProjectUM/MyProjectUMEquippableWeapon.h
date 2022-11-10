@@ -15,9 +15,4 @@ class PROJECTUM_API UMyProjectUMEquippableWeapon : public UProjectUMEquippableIt
 {
 	GENERATED_BODY()
 	
-public:
-	virtual void Use(class AProjectUMCharacter* CharacterUser) override;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
-		TSubclassOf<AProjectUMWeapon> WeaponClass;
 };

@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "ProjectUMEquipment.h"
 #include "ProjectUMWeapon.generated.h"
 
 UCLASS()
-class PROJECTUM_API AProjectUMWeapon : public ACharacter
+class PROJECTUM_API AProjectUMWeapon : public AProjectUMEquipment
 {
 	GENERATED_BODY()
 
@@ -19,13 +19,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
-		class USphereComponent* WeaponComponent;
-
 public:	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	UFUNCTION()
-		USphereComponent* GetWeaponComponent() { return WeaponComponent; };
 };

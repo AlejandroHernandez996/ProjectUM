@@ -40,47 +40,20 @@ void UProjectUMInventoryComponent::RemoveItem(UProjectUMItem* Item)
 }
 
 void UProjectUMInventoryComponent::EquipItem(class UProjectUMEquippableItem* Item, EEquippableSlotsEnum EquipSlot) {
-	if (EquipSlot == EEquippableSlotsEnum::CHEST && ChestSlot != Item) {
-		ChestSlot = Item;
-	}
 
-	else if (EquipSlot == EEquippableSlotsEnum::LEGS && LegsSlot != Item) {
-		LegsSlot = Item;
+	if (!EquipmentMap.FindRef(EquipSlot)) {
+		EquipmentMap.Add(EquipSlot, Item);
+		Items.Remove(Item);
+		OnInventoryUpdated.Broadcast();
 	}
-
-	else if (EquipSlot == EEquippableSlotsEnum::HEAD && HeadSlot != Item) {
-		HeadSlot = Item;
-	}
-	else if (EquipSlot == EEquippableSlotsEnum::HAND && HandSlot != Item) {
-		HandSlot = Item;
-	}
-	else {
-		return;
-	}
-	Items.Remove(Item);
-	OnInventoryUpdated.Broadcast();
 }
 
 void UProjectUMInventoryComponent::UnEquipItem(class UProjectUMEquippableItem* Item, EEquippableSlotsEnum EquipSlot) {
-	if (EquipSlot == EEquippableSlotsEnum::CHEST && ChestSlot == Item) {
-		ChestSlot = nullptr;
+	if (EquipmentMap.FindRef(EquipSlot) == Item) {
+		EquipmentMap.Add(EquipSlot, nullptr);
+		Items.Add(Item);
+		OnInventoryUpdated.Broadcast();
 	}
-
-	else if (EquipSlot == EEquippableSlotsEnum::LEGS && LegsSlot == Item) {
-		LegsSlot = nullptr;
-	}
-
-	else if (EquipSlot == EEquippableSlotsEnum::HEAD && HeadSlot == Item) {
-		HeadSlot = nullptr;
-	}
-	else if (EquipSlot == EEquippableSlotsEnum::HAND && HandSlot == Item) {
-		HandSlot = nullptr;
-	}
-	else {
-		return;
-	}
-	Items.Add(Item);
-	OnInventoryUpdated.Broadcast();
 }
 
 

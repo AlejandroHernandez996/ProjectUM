@@ -7,13 +7,12 @@
 #include "ProjectUMInventoryComponent.h"
 
 void UProjectUMEquippableItem::Use(class AProjectUMCharacter* CharacterUser) {
-	if (this == CharacterUser->GetInventory()->HeadSlot || this == CharacterUser->GetInventory()->ChestSlot ||this == CharacterUser->GetInventory()->LegsSlot)
-	{
-		CharacterUser->DeAttachArmor(EquipSlot);
-		CharacterUser->GetInventory()->UnEquipItem(this, EquipSlot);
-
-	} else {
+	if (!CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot)) {
 		CharacterUser->GetInventory()->EquipItem(this, EquipSlot);
-		CharacterUser->AttachArmor(EquipmentClass, EquipSlot);
+		CharacterUser->AttachEquipment(EquipmentClass, EquipSlot);
+	}
+	else {
+		CharacterUser->DeAttachEquipment(EquipSlot);
+		CharacterUser->GetInventory()->UnEquipItem(this, EquipSlot);
 	}
 }

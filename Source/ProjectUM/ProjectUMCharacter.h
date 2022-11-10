@@ -6,16 +6,6 @@
 #include "GameFramework/Character.h"
 #include "ProjectUMCharacter.generated.h"
 
-UENUM(BlueprintType)
-namespace AttackTypeEnum
-{
-	enum AttackType
-	{
-		FIST UMETA(DisplayName = "FIST ATTACK"),
-		MELEE_WEAPON = 1  UMETA(DisplayName = "MELEE WEAPON ATTACK")
-	};
-}
-
 UCLASS(config=Game)
 class AProjectUMCharacter : public ACharacter
 {
@@ -83,29 +73,22 @@ public:
 		class USphereComponent* FistComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
-		class AProjectUMWeapon* EquippedWeapon;
+		class USphereComponent* InteractComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
-		class AProjectUMEquipment* EquippedHead;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
+		TMap<EEquippableSlotsEnum, AProjectUMEquipment*> EquippedItemMap;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
-		class AProjectUMEquipment* EquippedChest;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+		TMap<EEquippableSlotsEnum, TSubclassOf<AProjectUMEquipment>> EquipmentClassMap;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
-		class AProjectUMEquipment* EquippedLegs;
+	UPROPERTY()
+		TMap<EEquippableSlotsEnum, FName> EquipSlotSkeletonMapping;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
-		TSubclassOf<AProjectUMWeapon> WeaponClass;
+	UFUNCTION()
+		TSubclassOf<AProjectUMEquipment> GetEquipmentClass(EEquippableSlotsEnum EquipmentSlot) { return EquipmentClassMap[EquipmentSlot]; }
 
-	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
-		TSubclassOf<AProjectUMEquipment> HeadClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
-		TSubclassOf<AProjectUMEquipment> ChestClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
-		TSubclassOf<AProjectUMEquipment> LegsClass;
-
+	UFUNCTION()
+		AProjectUMEquipment* GetEquippedItem(EEquippableSlotsEnum EquipmentSlot) { return EquippedItemMap[EquipmentSlot]; }
 
 	UFUNCTION()
 		void OnAttackHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
@@ -117,21 +100,12 @@ public:
 		void OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION()
-	void AttachWeapon(TSubclassOf<AProjectUMWeapon> Weapon);
+	void AttachEquipment(TSubclassOf<AProjectUMEquipment> Equipment, EEquippableSlotsEnum EquipSlot);
 
 	UFUNCTION()
-	void DeAttachWeapon();
-
-	UFUNCTION()
-		void AttachArmor(TSubclassOf<AProjectUMEquipment> Armor, EEquippableSlotsEnum EquipSlot);
-
-	UFUNCTION()
-		void DeAttachArmor(EEquippableSlotsEnum EquipSlot);
+	void DeAttachEquipment(EEquippableSlotsEnum EquipSlot);
 
 protected:
-	UPROPERTY()
-		TEnumAsByte<AttackTypeEnum::AttackType> AttackType;
-
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
 
@@ -247,12 +221,6 @@ protected:
 	/** Server function for attack.*/
 	UFUNCTION()
 		void HandleEquip(EEquippableSlotsEnum EquipSlot);
-
-	UFUNCTION()
-		void HandleEquipWeapon();
-
-	UFUNCTION()
-		void HandleEquipArmor(EEquippableSlotsEnum EquipSlot);
 
 	UFUNCTION(NetMulticast, Reliable)
 		void PlayProjectUMCharacterAnimMontage(UAnimMontage* AnimMontage);
