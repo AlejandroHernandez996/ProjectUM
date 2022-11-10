@@ -61,5 +61,5 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	virtual void Interact() override;
+	void Interact_Implementation(AProjectUMCharacter* Interactor) override;
 };

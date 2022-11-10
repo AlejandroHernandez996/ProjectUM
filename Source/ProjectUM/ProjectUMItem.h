@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
 #include "ProjectUMItem.generated.h"
 
 UENUM(BlueprintType)
@@ -20,7 +19,7 @@ namespace RarityEnum
 }
 
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
-class PROJECTUM_API UProjectUMItem : public UObject
+class PROJECTUM_API UProjectUMItem : public UDataAsset
 {
 	GENERATED_BODY()
 

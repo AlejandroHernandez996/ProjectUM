@@ -16,9 +16,12 @@ UProjectUMInventoryComponent::UProjectUMInventoryComponent()
 
 void UProjectUMInventoryComponent::AddItem(UProjectUMItem* Item)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("Adding... Item " + Item->GetName()));
+
 	if (Items.Num() >= Capacity || !Item) {
 		return;
 	}
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("Added Item " + Item->GetName()));
 	Item->OwningInventory = this;
 	Item->World = GetWorld();
 	Items.Add(Item);

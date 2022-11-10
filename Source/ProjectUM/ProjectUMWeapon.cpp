@@ -21,11 +21,3 @@ void AProjectUMWeapon::BeginPlay()
 	Super::BeginPlay();
 	
 }
-
-// Called to bind functionality to input
-void AProjectUMWeapon::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
-

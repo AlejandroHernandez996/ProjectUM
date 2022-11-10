@@ -3,11 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
 #include "ProjectUMEquipment.generated.h"
 
 UCLASS()
-class PROJECTUM_API AProjectUMEquipment : public ACharacter
+class PROJECTUM_API AProjectUMEquipment : public AActor
 {
 	GENERATED_BODY()
 	
@@ -15,18 +14,12 @@ public:
 	// Sets default values for this actor's properties
 	AProjectUMEquipment();
 
+	UFUNCTION()
+		USphereComponent* GetHitboxComponent() { return HitboxComponent; };
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
 		class USphereComponent* HitboxComponent;
-public:
-	UFUNCTION()
-		USphereComponent* GetHitboxComponent() { return HitboxComponent; };
 };

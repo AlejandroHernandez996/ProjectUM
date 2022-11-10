@@ -96,7 +96,7 @@ AProjectUMCharacter::AProjectUMCharacter()
 
 	InteractComponent = CreateDefaultSubobject<USphereComponent>(TEXT("InteractCollider"));
 	InteractComponent->SetupAttachment(RootComponent);
-	InteractComponent->SetCollisionProfileName("NoCollision");
+	InteractComponent->SetCollisionProfileName("Interaction");
 	InteractComponent->SetNotifyRigidBodyCollision(false);
 
 	if (GetLocalRole() == ROLE_Authority)
@@ -104,6 +104,9 @@ AProjectUMCharacter::AProjectUMCharacter()
 		FistComponent->OnComponentHit.AddDynamic(this, &AProjectUMCharacter::OnAttackHit);
 		FistComponent->OnComponentEndOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapEnd);
 		FistComponent->OnComponentBeginOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapBegin);
+
+		InteractComponent->OnComponentBeginOverlap.AddDynamic(this, &AProjectUMCharacter::OnInteractOverlapBegin);
+		InteractComponent->OnComponentEndOverlap.AddDynamic(this, &AProjectUMCharacter::OnInteractOverlapEnd);
 	}
 	
 	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::HAND, "hand_l");
@@ -127,7 +130,6 @@ void AProjectUMCharacter::BeginPlay() {
 
 void AProjectUMCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
-	// Set up gameplay key bindings
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
@@ -137,21 +139,16 @@ void AProjectUMCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAxis("Move Forward / Backward", this, &AProjectUMCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("Move Right / Left", this, &AProjectUMCharacter::MoveRight);
 
-	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
-	// "turn" handles devices that provide an absolute delta, such as a mouse.
-	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
 	PlayerInputComponent->BindAxis("Turn Right / Left Mouse", this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxis("Turn Right / Left Gamepad", this, &AProjectUMCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("Look Up / Down Mouse", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("Look Up / Down Gamepad", this, &AProjectUMCharacter::LookUpAtRate);
 
-	// Handle firing projectiles
 	PlayerInputComponent->BindAction("Skill 1", IE_Pressed, this, &AProjectUMCharacter::StartFire);
-
-	// Handle attacking projectiles
 	PlayerInputComponent->BindAction("Primary Attack", IE_Pressed, this, &AProjectUMCharacter::StartAttack);
-
 	PlayerInputComponent->BindAction("Spawn Items", IE_Pressed, this, &AProjectUMCharacter::SpawnItems);
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AProjectUMCharacter::StartInteracting);
+
 
 }
 
@@ -328,7 +325,7 @@ void AProjectUMCharacter::StopAttack()
 		FistComponent->SetCollisionProfileName("NoCollision");
 	}
 	else {
-		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
+		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
 	}
 }
 
@@ -355,7 +352,7 @@ void AProjectUMCharacter::OnAttackHit(UPrimitiveComponent* HitComponent, AActor*
 
 void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor->GetName() != this->GetName())
+	if (OtherActor->GetName() != this->GetName() && !AttackedCharactersSet.Contains(OtherActor->GetName()))
 	{
 		if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)) {
 			UGameplayStatics::ApplyDamage(OtherActor, 5.0f, GetInstigator()->Controller, this, UDamageType::StaticClass());
@@ -363,7 +360,7 @@ void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedCo
 		else {
 			UGameplayStatics::ApplyDamage(OtherActor, 10.0f, GetInstigator()->Controller, this, UDamageType::StaticClass());
 		}
-
+		AttackedCharactersSet.Add(OtherActor->GetName());
 	}
 }
 
@@ -375,6 +372,7 @@ void AProjectUMCharacter::OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComp
 	else {
 		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
 	}
+	AttackedCharactersSet.Remove(OtherActor->GetName());
 }
 
 void AProjectUMCharacter::StartEquipping(EEquippableSlotsEnum EquipSlot)
@@ -399,9 +397,8 @@ void AProjectUMCharacter::HandleEquip(EEquippableSlotsEnum EquipSlot) {
 
 		const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
 		EquippedItemMap.Add(EquipSlot, GetWorld()->SpawnActor<AProjectUMEquipment>(EquipmentClassMap.FindRef(EquipSlot)));
-		EquippedItemMap.FindRef(EquipSlot)->GetCapsuleComponent()->SetupAttachment(RootComponent);
-		EquippedItemMap.FindRef(EquipSlot)->GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
-		EquippedItemMap.FindRef(EquipSlot)->GetCapsuleComponent()->AttachToComponent(GetMesh(), AttachmentRules, EquipSlotSkeletonMapping.FindRef(EquipSlot));
+		EquippedItemMap.FindRef(EquipSlot)->GetRootComponent()->SetupAttachment(RootComponent);
+		EquippedItemMap.FindRef(EquipSlot)->GetRootComponent()->AttachToComponent(GetMesh(), AttachmentRules, EquipSlotSkeletonMapping.FindRef(EquipSlot));
 		if (EquipSlot == EEquippableSlotsEnum::HAND) {
 			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
 			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->SetNotifyRigidBodyCollision(false);
@@ -475,5 +472,67 @@ void AProjectUMCharacter::DeAttachEquipment(EEquippableSlotsEnum EquipSlot) {
 		EquipmentClassMap.FindRef(EquipSlot) = nullptr;
 		EquippedItemMap.FindRef(EquipSlot)->Destroy();
 		SetCurrentMaxHealth(MaxHealth - Inventory->EquipmentMap.FindRef(EquipSlot)->HealthAmount);
+	}
+}
+
+void AProjectUMCharacter::StartInteracting() {
+	FString msg1 = "STARTING INTERACTION";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg1);
+
+	if (bIsInteracting) {
+		return;
+	}
+	FString msg2 = "INTERACTING...";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg2);
+	bIsInteracting = true;
+	UWorld* World = GetWorld();
+	World->GetTimerManager().SetTimer(InteractTimer, this, &AProjectUMCharacter::StopInteracting, InteractRate, false);
+	HandleInteraction();
+}
+
+void AProjectUMCharacter::StopInteracting() {
+	bIsInteracting = false;
+
+}
+
+void AProjectUMCharacter::HandleInteraction_Implementation() {
+	FString msg1 = "HANDLE INTERACTING...";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg1);
+
+	if (!InteractableObjects.IsEmpty()) {
+		for (auto& Element : InteractableObjects) {
+			FString msg2 = "HANDLE INTERACTING ON " + Element->_getUObject()->GetName();
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, msg2);
+			 IInteractableObjectInterface::Execute_Interact(Element->_getUObject(), this);
+			return;
+		}
+	}
+	FString msg = "NOTHING TO BE INTERACTED ON :( ";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+}
+
+void AProjectUMCharacter::Interact_Implementation(AProjectUMCharacter* Interactor)
+{
+	FString msg = "IM BEING INTERACTED ON :O " + this->GetName();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+}
+
+void AProjectUMCharacter::OnInteractOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	IInteractableObjectInterface* InteractableObject = Cast<IInteractableObjectInterface>(OtherActor);
+	if (OtherActor != this && InteractableObject) {
+		FString msg = "DETECTED OBJECT " + OtherActor->GetName();
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+		InteractableObjects.Add(InteractableObject);
+	}
+}
+
+void AProjectUMCharacter::OnInteractOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	IInteractableObjectInterface* InteractableObject = Cast<IInteractableObjectInterface>(OtherActor);
+	if (InteractableObjects.Contains(InteractableObject)) {
+		FString msg = "OBJECT OUT OF RANGE " + OtherActor->GetName();
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+		InteractableObjects.Remove(InteractableObject);
 	}
 }

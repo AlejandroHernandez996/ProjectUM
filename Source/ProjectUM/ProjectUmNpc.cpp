@@ -6,6 +6,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/Engine.h"
+#include "ProjectUMCharacter.h"
 #include "ProjectUMProjectile.h"
 
 // Sets default values
@@ -73,6 +74,9 @@ float AProjectUmNpc::TakeDamage(float DamageTaken, struct FDamageEvent const& Da
 	return damageApplied;
 }
 
-void AProjectUmNpc::Interact() {
+void AProjectUmNpc::Interact_Implementation(AProjectUMCharacter* Interactor) {
+
+	FString msg = "NPC  " + this->GetName();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 
 }

@@ -14,11 +14,3 @@ void AProjectUMEquipment::BeginPlay()
 	Super::BeginPlay();
 
 }
-
-// Called to bind functionality to input
-void AProjectUMEquipment::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
-
