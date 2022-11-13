@@ -4,6 +4,7 @@
 #include "ProjectUMInventoryComponent.h"
 #include "ProjectUMItem.h"
 #include "EquippableSlotsEnum.h"
+#include "ProjectUMCharacter.h"
 #include "Engine/Engine.h"
 
 // Sets default values for this component's properties
@@ -23,6 +24,10 @@ void UProjectUMInventoryComponent::AddItem(UProjectUMItem* Item)
 	Item->OwningInventory = this;
 	Item->World = GetWorld();
 	Items.Add(Item);
+	UpdateInventoryToLootingCharacters();
+	if (OwningCharacter) {
+		OwningCharacter->BroadcastInventory();
+	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("ADD ITEM"));
 
 }
@@ -35,6 +40,10 @@ void UProjectUMInventoryComponent::RemoveItem(UProjectUMItem* Item)
 	Item->OwningInventory = nullptr;
 	Item->World = nullptr;
 	Items.Remove(Item);
+	UpdateInventoryToLootingCharacters();
+	if (OwningCharacter) {
+		OwningCharacter->BroadcastInventory();
+	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("REMOVE ITEM"));
 }
 
@@ -43,6 +52,7 @@ void UProjectUMInventoryComponent::EquipItem(class UProjectUMEquippableItem* Ite
 	if (!EquipmentMap.FindRef(EquipSlot)) {
 		EquipmentMap.Add(EquipSlot, Item);
 		Items.Remove(Item);
+		UpdateInventoryToLootingCharacters();
 	}
 }
 
@@ -50,6 +60,7 @@ void UProjectUMInventoryComponent::UnEquipItem(class UProjectUMEquippableItem* I
 	if (EquipmentMap.FindRef(EquipSlot) == Item) {
 		EquipmentMap.Add(EquipSlot, nullptr);
 		Items.Add(Item);
+		UpdateInventoryToLootingCharacters();
 	}
 }
 
@@ -59,6 +70,18 @@ void UProjectUMInventoryComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
+void UProjectUMInventoryComponent::UpdateInventoryToLootingCharacters() {
+	for (auto& LootingCharacter : LootingCharacters) {
+		LootingCharacter->BroadcastNpcLoot(GetAllInventoryItemIds());
+	}
+}
 
+TArray<int32> UProjectUMInventoryComponent::GetAllInventoryItemIds() {
+	TArray<int32> ItemIds = TArray<int32>();
+	for (auto& Item : Items) {
+		ItemIds.Add(Item->ItemId);
+	}
+	return ItemIds;
+}
 
 

@@ -37,6 +37,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 		int32 Capacity;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
+		class AProjectUMCharacter* OwningCharacter;
+
 	UPROPERTY(EditDefaultsOnly, Instanced, Category = "Inventory")
 		TArray<class UProjectUMItem*> DefaultItems;
 
@@ -48,6 +51,15 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
 		TMap<EEquippableSlotsEnum, UProjectUMEquippableItem*> EquipmentMap;
+
+	UPROPERTY()
+		TSet<class AProjectUMCharacter*> LootingCharacters;
+
+	UFUNCTION()
+		void UpdateInventoryToLootingCharacters();
+
+	UFUNCTION()
+		TArray<int32> GetAllInventoryItemIds();
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 		UProjectUMEquippableItem* GetEquipmentItem(EEquippableSlotsEnum EquipSlot) { return EquipmentMap.FindRef(EquipSlot); }

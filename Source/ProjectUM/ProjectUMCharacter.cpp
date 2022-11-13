@@ -29,6 +29,7 @@ AProjectUMCharacter::AProjectUMCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	PrimaryActorTick.bCanEverTick = true;
 
 	//Initialize the player's Health
 	BaseMaxHealth = 100.0f;
@@ -80,6 +81,7 @@ AProjectUMCharacter::AProjectUMCharacter()
 	// Create an inventory
 	Inventory = CreateDefaultSubobject<UProjectUMInventoryComponent>("Inventory");
 	Inventory->Capacity = 20;
+	Inventory->OwningCharacter = this;
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -116,6 +118,13 @@ AProjectUMCharacter::AProjectUMCharacter()
 	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::LEGS, "pelvis");
 
 }
+
+// Called every frame
+void AProjectUMCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
 
 // Called after constructor
 void AProjectUMCharacter::BeginPlay() {
@@ -532,14 +541,10 @@ void AProjectUMCharacter::Interact_Implementation(AProjectUMCharacter* Interacto
 {
 	FString msg = "Character  " + this->GetName();
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-	TArray<int32> ItemIds = TArray<int32>();
-
-	for (auto& Item : Inventory->Items) {
-		ItemIds.Add(Item->ItemId);
-	}
+	Inventory->LootingCharacters.Add(Interactor);
 	Interactor->SetLootingInventory(Inventory);
 	Interactor->OpenLoot();
-	Interactor->BroadcastNpcLoot(ItemIds);
+	Interactor->BroadcastNpcLoot(Inventory->GetAllInventoryItemIds());
 }
 
 void AProjectUMCharacter::OnInteractOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -579,10 +584,7 @@ void AProjectUMCharacter::OpenLoot_Implementation() {
 }
 
 void AProjectUMCharacter::BroadcastInventory_Implementation() {
-	TArray<int32> ItemIds = TArray<int32>();
-	for (auto& Item : Inventory->Items) {
-		ItemIds.Add(Item->ItemId);
-	}
+
 	TArray<UProjectUMEquippableItem*> EquippedItems;
 	Inventory->EquipmentMap.GenerateValueArray(EquippedItems);
 	TArray<int32> EquippedItemIds = TArray<int32>();
@@ -591,7 +593,7 @@ void AProjectUMCharacter::BroadcastInventory_Implementation() {
 			EquippedItemIds.Add(Item->ItemId);
 		}
 	}
-	BroadcastInventoryToClient(ItemIds, EquippedItemIds);
+	BroadcastInventoryToClient(Inventory->GetAllInventoryItemIds(), EquippedItemIds);
 }
 
 void AProjectUMCharacter::OpenInventory_Implementation() {
@@ -633,9 +635,5 @@ void AProjectUMCharacter::HandleLootingItem_Implementation(int32 ItemId)
 	LootingInventory->RemoveItem(LootedItem);
 
 	BroadcastInventory();
-	TArray<int32> ItemIds = TArray<int32>();
-	for (auto& Item : LootingInventory->Items) {
-		ItemIds.Add(Item->ItemId);
-	}
-	BroadcastNpcLoot(ItemIds);
+	BroadcastNpcLoot(LootingInventory->GetAllInventoryItemIds());
 }

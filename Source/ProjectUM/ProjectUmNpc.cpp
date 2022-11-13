@@ -83,13 +83,9 @@ void AProjectUmNpc::Interact_Implementation(AProjectUMCharacter* Interactor) {
 
 	FString msg = "NPC  " + this->GetName();
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-	TArray<int32> ItemIds = TArray<int32>();
-
-	for (auto& Item : Inventory->Items) {
-		ItemIds.Add(Item->ItemId);
-	}
+	Inventory->LootingCharacters.Add(Interactor);
 	Interactor->SetLootingInventory(Inventory);
 	Interactor->OpenLoot();
-	Interactor->BroadcastNpcLoot(ItemIds);
+	Interactor->BroadcastNpcLoot(Inventory->GetAllInventoryItemIds());
 
 }

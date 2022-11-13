@@ -319,5 +319,10 @@ protected:
 
 	void SpawnItems_Implementation();
 
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	float lastTick;
+
 };
 
