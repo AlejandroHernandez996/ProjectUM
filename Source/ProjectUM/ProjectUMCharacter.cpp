@@ -20,6 +20,7 @@
 #include "ProjectUMItem.h"
 #include "ProjectUMPickableItem.h"
 #include "ProjectUmNpc.h"
+#include "ProjectUMLootableProp.h"
 #include "ProjectUMInventoryComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -70,7 +71,7 @@ AProjectUMCharacter::AProjectUMCharacter()
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f; // The camera follows at this distance behind the character	
+	CameraBoom->TargetArmLength = 500.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 
 	// Create a follow camera
@@ -564,6 +565,26 @@ void AProjectUMCharacter::OnInteractOverlapEnd(UPrimitiveComponent* OverlappedCo
 		FString msg = "OBJECT OUT OF RANGE " + OtherActor->GetName();
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 		InteractableObjects.Remove(InteractableObject);
+
+		if (!LootingInventory) return;
+
+		AProjectUMCharacter* OtherCharacter = Cast<AProjectUMCharacter>(OtherActor);
+		if (OtherCharacter && OtherCharacter->Inventory == LootingInventory) {
+			LootingInventory = nullptr;
+			OpenLoot();
+		}
+		AProjectUmNpc* OtherNpc = Cast<AProjectUmNpc>(OtherActor);
+		if (OtherNpc && OtherNpc->GetInventory() == LootingInventory) {
+			LootingInventory = nullptr;
+			OpenLoot();
+		}
+
+		AProjectUMLootableProp* OtherProp = Cast<AProjectUMLootableProp>(OtherActor);
+		if (OtherProp && OtherProp->GetInventory() == LootingInventory) {
+			LootingInventory = nullptr;
+			OpenLoot();
+		}
+
 	}
 }
 
