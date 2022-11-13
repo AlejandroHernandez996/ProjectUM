@@ -20,4 +20,26 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item", Instanced)
 		class UProjectUMItem* Item;
+	
+	// Sphere component used to test collision.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
+		class USphereComponent* SphereComponent;
+
+	// Static Mesh used to provide a visual representation of the object.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
+		class UStaticMeshComponent* StaticMesh;
+
+	UFUNCTION()
+		void SetStaticMesh(UStaticMesh* Mesh) {
+			StaticMesh->SetStaticMesh(Mesh);
+		}
+
+	UFUNCTION()
+		void SetItem(UProjectUMItem* NewItem) {
+		Item = NewItem;
+	}
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 };

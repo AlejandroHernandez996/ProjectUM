@@ -7,6 +7,12 @@
 #include "InteractableObjectInterface.h"
 #include "ProjectUMCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNpcCorpseInteracted, const TArray<int32>&, ItemIds);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNpcCorpseInteractedOpenLootWidget);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventoryOpenDisplayItems, const TArray<int32>&, InventoryItemIds, const TArray<int32>&, EquippedItemsIds);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryOpen);
+
+
 UCLASS(config=Game)
 class AProjectUMCharacter : public ACharacter, public IInteractableObjectInterface
 {
@@ -26,6 +32,19 @@ public:
 
 	UFUNCTION()
 		UProjectUMInventoryComponent* GetInventory() { return Inventory; }
+
+	UPROPERTY(BlueprintAssignable, Category = "Interaction")
+		FOnNpcCorpseInteracted OnNpcCorpseInteracted;
+
+	UPROPERTY(BlueprintAssignable, Category = "Interaction")
+		FOnNpcCorpseInteractedOpenLootWidget OnNpcCorpseInteractedOpenLootWidget;
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+		FOnInventoryOpenDisplayItems OnInventoryOpenDisplayItems;
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+		FOnInventoryOpen OnInventoryOpen;
+
 
 	virtual void BeginPlay() override;
 
@@ -102,6 +121,12 @@ public:
 
 	UFUNCTION()
 	void DeAttachEquipment(EEquippableSlotsEnum EquipSlot);
+
+
+	UFUNCTION(Server, Reliable, Category = "Inventory")
+		void AddItemToInventory(class UProjectUMItem* Item);
+
+	void AddItemToInventory_Implementation(class UProjectUMItem* Item);
 
 protected:
 	void MoveForward(float Value);
@@ -202,20 +227,26 @@ protected:
 	bool bIsUsingItem;
 
 	UFUNCTION(BlueprintCallable, BlueprintCallable, Category = "Item")
-		void StartUsingItem(class UProjectUMItem* Item);
+		void StartUsingItem(int32 ItemId);
 
 	UFUNCTION(BlueprintCallable, Category = "Item")
 		void StopUsingItem();
 
 	UFUNCTION(Server, Reliable, Category = "Item")
-		void HandleUseItemServer(class UProjectUMItem* Item);
+		void HandleUseItemServer(int32 ItemId);
 
-	void HandleUseItemServer_Implementation(class UProjectUMItem* Item);
+	void HandleUseItemServer_Implementation(int32 ItemId);
 
-	UFUNCTION(NetMulticast, Reliable, Category = "Item")
-		void HandleUseItemClient(class UProjectUMItem* Item);
+	UFUNCTION(BlueprintCallable, BlueprintCallable, Category = "Item")
+		void StartDroppingItem(int32 ItemId);
 
-	void HandleUseItemClient_Implementation(class UProjectUMItem* Item);
+	UFUNCTION(BlueprintCallable, Category = "Item")
+		void StopDroppingItem();
+
+	UFUNCTION(Server, Reliable, Category = "Item")
+		void HandleDropItemServer(int32 ItemId);
+
+	void HandleDropItemServer_Implementation(int32 ItemId);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
 		float InteractRate = .25f;
@@ -230,16 +261,39 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 		void StopInteracting();
 
-	UFUNCTION(NetMulticast, Reliable, Category = "Interaction")
+	UFUNCTION(Server, Reliable, Category = "Interaction")
 		void HandleInteraction();
 
 	void HandleInteraction_Implementation();
 
+public:
+	UFUNCTION(Client, Reliable, Category = "Interaction")
+		void BroadcastNpcLoot(const TArray<int32>& ItemIds);
+
+	void BroadcastNpcLoot_Implementation(const TArray<int32>& ItemIds);
+
+	UFUNCTION(Server, Reliable, Category = "Interaction")
+		void BroadcastInventory();
+
+	void BroadcastInventory_Implementation();
+
+	UFUNCTION(Client, Reliable, Category = "Interaction")
+		void BroadcastInventoryToClient(const TArray<int32>& InventoryItemIds, const TArray<int32>& EquippedItemIds);
+
+	void BroadcastInventoryToClient_Implementation(const TArray<int32>& InventoryItemIds, const TArray<int32>& EquippedItemIds);
+
+	UFUNCTION(Client, Reliable, Category = "Interaction")
+		void OpenInventory();
+
+	void OpenInventory_Implementation();
+
+protected:
 	void Interact_Implementation(AProjectUMCharacter* Interactor) override;
 
-	UFUNCTION(NetMulticast, Reliable)
+	UFUNCTION(Server, Reliable)
 		void SpawnItems();
 
 	void SpawnItems_Implementation();
+
 };
 

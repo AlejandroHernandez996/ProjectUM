@@ -31,6 +31,9 @@ public:
 
 	virtual class UWorld* GetWorld() const { return World; }
 
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Item")
+		int32 ItemId;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 		FText ItemName;
 

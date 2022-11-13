@@ -13,7 +13,6 @@ class AProjectUMGameMode : public AGameModeBase
 	
 public:
 	AProjectUMGameMode();
-
 };
 
 

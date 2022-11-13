@@ -16,15 +16,33 @@ public:
 	// Sets default values for this character's properties
 	AProjectUmNpc();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	/** Getter for Max Health.*/
+	UFUNCTION(BlueprintPure, Category = "Health")
+		FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+
+	/** Getter for Current Health.*/
+	UFUNCTION(BlueprintPure, Category = "Health")
+		FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
+
+	/** Setter for Current Health. Clamps the value between 0 and MaxHealth and calls OnHealthUpdate. Should only be called on the server.*/
+	UFUNCTION(BlueprintCallable, Category = "Health")
+		void SetCurrentHealth(float healthValue);
+
+	/** Event for taking damage. Overridden from APawn.*/
+	UFUNCTION(BlueprintCallable, Category = "Health")
+		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
+	void Interact_Implementation(AProjectUMCharacter* Interactor) override;
+
+	UFUNCTION()
+		UProjectUMInventoryComponent* GetInventory() { return Inventory; }
+
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Iventory", meta = (AllowPrivateAccess = "true"))
+		class UProjectUMInventoryComponent* Inventory;
 
 	/** The player's maximum health. This is the highest value of their health can be. This value is a value of the player's health, which starts at when spawned.*/
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
@@ -44,22 +62,6 @@ protected:
 	/** Property replication */
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-public:
-	/** Getter for Max Health.*/
-	UFUNCTION(BlueprintPure, Category = "Health")
-		FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
-
-	/** Getter for Current Health.*/
-	UFUNCTION(BlueprintPure, Category = "Health")
-		FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
-
-	/** Setter for Current Health. Clamps the value between 0 and MaxHealth and calls OnHealthUpdate. Should only be called on the server.*/
-	UFUNCTION(BlueprintCallable, Category = "Health")
-		void SetCurrentHealth(float healthValue);
-
-	/** Event for taking damage. Overridden from APawn.*/
-	UFUNCTION(BlueprintCallable, Category = "Health")
-		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
-
-	void Interact_Implementation(AProjectUMCharacter* Interactor) override;
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 };

@@ -2,6 +2,8 @@
 
 #include "ProjectUMGameMode.h"
 #include "ProjectUMCharacter.h"
+#include "ProjectUMGameState.h"
+#include "ProjectUMItem.h"
 #include "UObject/ConstructorHelpers.h"
 
 AProjectUMGameMode::AProjectUMGameMode()
@@ -12,4 +14,5 @@ AProjectUMGameMode::AProjectUMGameMode()
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
+
 }

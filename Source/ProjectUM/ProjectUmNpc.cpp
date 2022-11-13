@@ -7,6 +7,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Engine/Engine.h"
 #include "ProjectUMCharacter.h"
+#include "ProjectUMInventoryComponent.h"
 #include "ProjectUMProjectile.h"
 
 // Sets default values
@@ -18,13 +19,20 @@ AProjectUmNpc::AProjectUmNpc()
 	MaxHealth = 100.0f;
 	CurrentHealth = MaxHealth;
 
+	// Create an inventory
+	Inventory = CreateDefaultSubobject<UProjectUMInventoryComponent>("Inventory");
+	Inventory->Capacity = 20;
 }
 
 // Called when the game starts or when spawned
 void AProjectUmNpc::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	if (GetLocalRole() == ROLE_Authority) {
+		for (auto& Item : Inventory->DefaultItems) {
+			Inventory->AddItem(Item);
+		}
+	}
 }
 
 // Called every frame
@@ -53,9 +61,6 @@ void AProjectUmNpc::OnHealthUpdate()
 	/*
 		Any special functionality that should occur as a result of damage or death should be placed here.
 	*/
-	if (CurrentHealth <= 0.0f) {
-		Destroy();
-	}
 }
 void AProjectUmNpc::SetCurrentHealth(float healthValue)
 {
@@ -78,5 +83,11 @@ void AProjectUmNpc::Interact_Implementation(AProjectUMCharacter* Interactor) {
 
 	FString msg = "NPC  " + this->GetName();
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+	TArray<int32> ItemIds = TArray<int32>();
+
+	for (auto& Item : Inventory->Items) {
+		ItemIds.Add(Item->ItemId);
+	}
+	Interactor->BroadcastNpcLoot(ItemIds);
 
 }

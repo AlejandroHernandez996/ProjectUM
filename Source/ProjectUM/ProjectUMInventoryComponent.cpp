@@ -9,9 +9,7 @@
 // Sets default values for this component's properties
 UProjectUMInventoryComponent::UProjectUMInventoryComponent()
 {
-
 	Capacity = 20;
-	
 }
 
 void UProjectUMInventoryComponent::AddItem(UProjectUMItem* Item)
@@ -25,7 +23,6 @@ void UProjectUMInventoryComponent::AddItem(UProjectUMItem* Item)
 	Item->OwningInventory = this;
 	Item->World = GetWorld();
 	Items.Add(Item);
-	OnInventoryUpdated.Broadcast();
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("ADD ITEM"));
 
 }
@@ -38,7 +35,6 @@ void UProjectUMInventoryComponent::RemoveItem(UProjectUMItem* Item)
 	Item->OwningInventory = nullptr;
 	Item->World = nullptr;
 	Items.Remove(Item);
-	OnInventoryUpdated.Broadcast();
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("REMOVE ITEM"));
 }
 
@@ -47,7 +43,6 @@ void UProjectUMInventoryComponent::EquipItem(class UProjectUMEquippableItem* Ite
 	if (!EquipmentMap.FindRef(EquipSlot)) {
 		EquipmentMap.Add(EquipSlot, Item);
 		Items.Remove(Item);
-		OnInventoryUpdated.Broadcast();
 	}
 }
 
@@ -55,7 +50,6 @@ void UProjectUMInventoryComponent::UnEquipItem(class UProjectUMEquippableItem* I
 	if (EquipmentMap.FindRef(EquipSlot) == Item) {
 		EquipmentMap.Add(EquipSlot, nullptr);
 		Items.Add(Item);
-		OnInventoryUpdated.Broadcast();
 	}
 }
 

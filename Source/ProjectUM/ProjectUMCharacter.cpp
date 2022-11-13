@@ -18,6 +18,8 @@
 #include "ProjectUMEquipment.h"
 #include "MyProjectUMFoodItem.h"
 #include "ProjectUMItem.h"
+#include "ProjectUMPickableItem.h"
+#include "ProjectUmNpc.h"
 #include "ProjectUMInventoryComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -78,7 +80,6 @@ AProjectUMCharacter::AProjectUMCharacter()
 	// Create an inventory
 	Inventory = CreateDefaultSubobject<UProjectUMInventoryComponent>("Inventory");
 	Inventory->Capacity = 20;
-	Inventory->SetIsReplicated(true);
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -148,7 +149,8 @@ void AProjectUMCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("Primary Attack", IE_Pressed, this, &AProjectUMCharacter::StartAttack);
 	PlayerInputComponent->BindAction("Spawn Items", IE_Pressed, this, &AProjectUMCharacter::SpawnItems);
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AProjectUMCharacter::StartInteracting);
-
+	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AProjectUMCharacter::OpenInventory);
+	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AProjectUMCharacter::BroadcastInventory);
 
 }
 
@@ -355,9 +357,13 @@ void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedCo
 	if (OtherActor->GetName() != this->GetName() && !AttackedCharactersSet.Contains(OtherActor->GetName()))
 	{
 		if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)) {
+			FString msg = "HAND ATTACK";
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 			UGameplayStatics::ApplyDamage(OtherActor, 5.0f, GetInstigator()->Controller, this, UDamageType::StaticClass());
 		}
 		else {
+			FString msg = "SWORD ATTACK";
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 			UGameplayStatics::ApplyDamage(OtherActor, 10.0f, GetInstigator()->Controller, this, UDamageType::StaticClass());
 		}
 		AttackedCharactersSet.Add(OtherActor->GetName());
@@ -410,17 +416,15 @@ void AProjectUMCharacter::HandleEquip(EEquippableSlotsEnum EquipSlot) {
 }
 
 
-void AProjectUMCharacter::StartUsingItem(UProjectUMItem* Item)
+void AProjectUMCharacter::StartUsingItem(int32 ItemId)
 {
-	if (Item == nullptr) {
-		return;
-	}
+	
 	if (!bIsUsingItem)
 	{
 		bIsUsingItem = true;
 		UWorld* World = GetWorld();
 		World->GetTimerManager().SetTimer(UseItemTimer, this, &AProjectUMCharacter::StopUsingItem, UseItemRate, false);
-		HandleUseItemServer(Item);
+		HandleUseItemServer(ItemId);
 	}
 }
 
@@ -429,35 +433,61 @@ void AProjectUMCharacter::StopUsingItem()
 		bIsUsingItem = false;
 }
 
-void AProjectUMCharacter::HandleUseItemServer_Implementation(UProjectUMItem* Item)
+void AProjectUMCharacter::HandleUseItemServer_Implementation(int32 ItemId)
 {
-		Item->Use(this);
-		HandleUseItemClient(Item);
+	UProjectUMItem* Item = Inventory->GetItemById(ItemId);
+	if (!Item) {
+		return;
+	}
+	FString msg = "USING ITEM";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, msg);
+	
+	Item->Use(this);
+	BroadcastInventory();
 }
 
-void AProjectUMCharacter::HandleUseItemClient_Implementation(UProjectUMItem* Item)
+void AProjectUMCharacter::StartDroppingItem(int32 ItemId)
 {
-	if (GetLocalRole() != ROLE_Authority) {
-		Item->Use(this);
+	if (!bIsUsingItem)
+	{
+		bIsUsingItem = true;
+		UWorld* World = GetWorld();
+		World->GetTimerManager().SetTimer(UseItemTimer, this, &AProjectUMCharacter::StopUsingItem, UseItemRate, false);
+		HandleDropItemServer(ItemId);
 	}
+}
+
+void AProjectUMCharacter::StopDroppingItem()
+{
+	bIsUsingItem = false;
+}
+
+void AProjectUMCharacter::HandleDropItemServer_Implementation(int32 ItemId)
+{
+	UProjectUMItem* Item = Inventory->GetItemById(ItemId);
+	if (!Item) {
+		return;
+	}
+	FString msg = "DROPPING ITEM";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, msg);
+	AProjectUMPickableItem* PickableItem = (AProjectUMPickableItem*)GetWorld()->SpawnActor(AProjectUMPickableItem::StaticClass());
+	PickableItem->SetActorLocation(GetActorLocation());
+	PickableItem->SetStaticMesh(Item->PickupMesh);
+	PickableItem->SetItem(Item);
+	PickableItem->StaticMesh->SetCollisionProfileName("NoCollision");
+	Inventory->RemoveItem(Item);
+	BroadcastInventory();
 }
 
 void AProjectUMCharacter::SpawnItems_Implementation() {
-	FString msg = "?";
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 	for (auto& Item : Inventory->DefaultItems) {
-		FString healthMessage = "YO";
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
 		Inventory->AddItem(Item);
 	}
+	BroadcastInventory();
 }
 
 void AProjectUMCharacter::AttachEquipment(TSubclassOf<AProjectUMEquipment> Equipment, EEquippableSlotsEnum EquipSlot) {
 	if (GetLocalRole() == ROLE_Authority) {
-
-		FString msg = "ATTACHING ARMOR";
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-
 		EquipmentClassMap.Add(EquipSlot, Equipment);
 		SetCurrentMaxHealth(MaxHealth + Inventory->EquipmentMap.FindRef(EquipSlot)->HealthAmount);
 		StartEquipping(EquipSlot);
@@ -466,9 +496,6 @@ void AProjectUMCharacter::AttachEquipment(TSubclassOf<AProjectUMEquipment> Equip
 
 void AProjectUMCharacter::DeAttachEquipment(EEquippableSlotsEnum EquipSlot) {
 	if (GetLocalRole() == ROLE_Authority) {
-
-		FString msg = "DETTACHING ARMOR";
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 		EquipmentClassMap.FindRef(EquipSlot) = nullptr;
 		EquippedItemMap.FindRef(EquipSlot)->Destroy();
 		SetCurrentMaxHealth(MaxHealth - Inventory->EquipmentMap.FindRef(EquipSlot)->HealthAmount);
@@ -476,14 +503,9 @@ void AProjectUMCharacter::DeAttachEquipment(EEquippableSlotsEnum EquipSlot) {
 }
 
 void AProjectUMCharacter::StartInteracting() {
-	FString msg1 = "STARTING INTERACTION";
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg1);
-
 	if (bIsInteracting) {
 		return;
 	}
-	FString msg2 = "INTERACTING...";
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg2);
 	bIsInteracting = true;
 	UWorld* World = GetWorld();
 	World->GetTimerManager().SetTimer(InteractTimer, this, &AProjectUMCharacter::StopInteracting, InteractRate, false);
@@ -496,9 +518,6 @@ void AProjectUMCharacter::StopInteracting() {
 }
 
 void AProjectUMCharacter::HandleInteraction_Implementation() {
-	FString msg1 = "HANDLE INTERACTING...";
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg1);
-
 	if (!InteractableObjects.IsEmpty()) {
 		for (auto& Element : InteractableObjects) {
 			FString msg2 = "HANDLE INTERACTING ON " + Element->_getUObject()->GetName();
@@ -507,14 +526,19 @@ void AProjectUMCharacter::HandleInteraction_Implementation() {
 			return;
 		}
 	}
-	FString msg = "NOTHING TO BE INTERACTED ON :( ";
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 }
 
 void AProjectUMCharacter::Interact_Implementation(AProjectUMCharacter* Interactor)
 {
-	FString msg = "IM BEING INTERACTED ON :O " + this->GetName();
+	FString msg = "NPC  " + this->GetName();
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+	TArray<int32> ItemIds = TArray<int32>();
+
+	for (auto& Item : Inventory->Items) {
+		ItemIds.Add(Item->ItemId);
+	}
+	Interactor->BroadcastNpcLoot(ItemIds);
+
 }
 
 void AProjectUMCharacter::OnInteractOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -535,4 +559,41 @@ void AProjectUMCharacter::OnInteractOverlapEnd(UPrimitiveComponent* OverlappedCo
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 		InteractableObjects.Remove(InteractableObject);
 	}
+}
+
+void AProjectUMCharacter::AddItemToInventory_Implementation(UProjectUMItem* Item) {
+	Inventory->AddItem(Item);
+	BroadcastInventory();
+}
+
+void AProjectUMCharacter::BroadcastNpcLoot_Implementation(const TArray<int32>& ItemIds) {
+	FString msg = "BROADCASTING NPC LOOT :)";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+	OnNpcCorpseInteractedOpenLootWidget.Broadcast();
+
+	OnNpcCorpseInteracted.Broadcast(ItemIds);
+}
+
+void AProjectUMCharacter::BroadcastInventory_Implementation() {
+	TArray<int32> ItemIds = TArray<int32>();
+	for (auto& Item : Inventory->Items) {
+		ItemIds.Add(Item->ItemId);
+	}
+	TArray<UProjectUMEquippableItem*> EquippedItems;
+	Inventory->EquipmentMap.GenerateValueArray(EquippedItems);
+	TArray<int32> EquippedItemIds = TArray<int32>();
+	for (auto& Item : EquippedItems){
+		if (Item) {
+			EquippedItemIds.Add(Item->ItemId);
+		}
+	}
+	BroadcastInventoryToClient(ItemIds, EquippedItemIds);
+}
+
+void AProjectUMCharacter::OpenInventory_Implementation() {
+	OnInventoryOpen.Broadcast();
+}
+
+void AProjectUMCharacter::BroadcastInventoryToClient_Implementation(const TArray<int32>& InventoryItemIds, const TArray<int32>& EquippedItemIds) {
+	OnInventoryOpenDisplayItems.Broadcast(InventoryItemIds, EquippedItemIds);
 }

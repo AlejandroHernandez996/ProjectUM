@@ -51,4 +51,21 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 		UProjectUMEquippableItem* GetEquipmentItem(EEquippableSlotsEnum EquipSlot) { return EquipmentMap.FindRef(EquipSlot); }
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+		UProjectUMItem* GetItemById(int32 ItemId) { 
+		for (auto& Item : Items) {
+			if (Item->ItemId == ItemId) {
+				return Item;
+			}
+		}
+		TArray< UProjectUMEquippableItem*> EquippedItems;
+		EquipmentMap.GenerateValueArray(EquippedItems);
+		for (auto& Item : EquippedItems) {
+			if (Item->ItemId == ItemId) {
+				return Item;
+			}
+		}
+		return nullptr;
+	}
 };
