@@ -27,8 +27,16 @@ class AProjectUMCharacter : public ACharacter, public IInteractableObjectInterfa
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Iventory", meta = (AllowPrivateAccess = "true"))
 		class UProjectUMInventoryComponent* Inventory;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Iventory", meta = (AllowPrivateAccess = "true"))
+		class UProjectUMInventoryComponent* LootingInventory;
+
 public:
 	AProjectUMCharacter();
+
+	UFUNCTION()
+		void SetLootingInventory(UProjectUMInventoryComponent* LootInventory) {
+			LootingInventory = LootInventory;
+		}
 
 	UFUNCTION()
 		UProjectUMInventoryComponent* GetInventory() { return Inventory; }
@@ -248,6 +256,17 @@ protected:
 
 	void HandleDropItemServer_Implementation(int32 ItemId);
 
+	UFUNCTION(BlueprintCallable, BlueprintCallable, Category = "Item")
+		void StartLootingItem(int32 ItemId);
+
+	UFUNCTION(BlueprintCallable, Category = "Item")
+		void StopLootingItem();
+
+	UFUNCTION(Server, Reliable, Category = "Item")
+		void HandleLootingItem(int32 ItemId);
+
+	void HandleLootingItem_Implementation(int32 ItemId);
+
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
 		float InteractRate = .25f;
 
@@ -271,6 +290,11 @@ public:
 		void BroadcastNpcLoot(const TArray<int32>& ItemIds);
 
 	void BroadcastNpcLoot_Implementation(const TArray<int32>& ItemIds);
+
+	UFUNCTION(Client, Reliable, Category = "Interaction")
+		void OpenLoot();
+
+	void OpenLoot_Implementation();
 
 	UFUNCTION(Server, Reliable, Category = "Interaction")
 		void BroadcastInventory();

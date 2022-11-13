@@ -88,6 +88,8 @@ void AProjectUmNpc::Interact_Implementation(AProjectUMCharacter* Interactor) {
 	for (auto& Item : Inventory->Items) {
 		ItemIds.Add(Item->ItemId);
 	}
+	Interactor->SetLootingInventory(Inventory);
+	Interactor->OpenLoot();
 	Interactor->BroadcastNpcLoot(ItemIds);
 
 }

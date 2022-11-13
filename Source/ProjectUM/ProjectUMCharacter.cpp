@@ -530,15 +530,16 @@ void AProjectUMCharacter::HandleInteraction_Implementation() {
 
 void AProjectUMCharacter::Interact_Implementation(AProjectUMCharacter* Interactor)
 {
-	FString msg = "NPC  " + this->GetName();
+	FString msg = "Character  " + this->GetName();
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 	TArray<int32> ItemIds = TArray<int32>();
 
 	for (auto& Item : Inventory->Items) {
 		ItemIds.Add(Item->ItemId);
 	}
+	Interactor->SetLootingInventory(Inventory);
+	Interactor->OpenLoot();
 	Interactor->BroadcastNpcLoot(ItemIds);
-
 }
 
 void AProjectUMCharacter::OnInteractOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -569,9 +570,12 @@ void AProjectUMCharacter::AddItemToInventory_Implementation(UProjectUMItem* Item
 void AProjectUMCharacter::BroadcastNpcLoot_Implementation(const TArray<int32>& ItemIds) {
 	FString msg = "BROADCASTING NPC LOOT :)";
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-	OnNpcCorpseInteractedOpenLootWidget.Broadcast();
 
 	OnNpcCorpseInteracted.Broadcast(ItemIds);
+}
+
+void AProjectUMCharacter::OpenLoot_Implementation() {
+	OnNpcCorpseInteractedOpenLootWidget.Broadcast();
 }
 
 void AProjectUMCharacter::BroadcastInventory_Implementation() {
@@ -596,4 +600,42 @@ void AProjectUMCharacter::OpenInventory_Implementation() {
 
 void AProjectUMCharacter::BroadcastInventoryToClient_Implementation(const TArray<int32>& InventoryItemIds, const TArray<int32>& EquippedItemIds) {
 	OnInventoryOpenDisplayItems.Broadcast(InventoryItemIds, EquippedItemIds);
+}
+
+void AProjectUMCharacter::StartLootingItem(int32 ItemId)
+{
+
+	if (!bIsUsingItem)
+	{
+		bIsUsingItem = true;
+		UWorld* World = GetWorld();
+		World->GetTimerManager().SetTimer(UseItemTimer, this, &AProjectUMCharacter::StopUsingItem, UseItemRate, false);
+		HandleLootingItem(ItemId);
+	}
+}
+
+void AProjectUMCharacter::StopLootingItem()
+{
+	bIsUsingItem = false;
+}
+
+void AProjectUMCharacter::HandleLootingItem_Implementation(int32 ItemId)
+{
+	if (!LootingInventory) return;
+
+	UProjectUMItem* LootedItem = LootingInventory->GetItemById(ItemId);
+	if (!LootedItem) {
+		return;
+	}
+	FString msg = "Looting ITEM";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, msg);
+	Inventory->AddItem(LootedItem);
+	LootingInventory->RemoveItem(LootedItem);
+
+	BroadcastInventory();
+	TArray<int32> ItemIds = TArray<int32>();
+	for (auto& Item : LootingInventory->Items) {
+		ItemIds.Add(Item->ItemId);
+	}
+	BroadcastNpcLoot(ItemIds);
 }
