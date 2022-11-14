@@ -20,8 +20,5 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
 		TSubclassOf<AProjectUMEquipment> EquipmentClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Stats")
-		float HealthAmount;
-
 	virtual void Use(class AProjectUMCharacter* CharacterUser) override;
 };

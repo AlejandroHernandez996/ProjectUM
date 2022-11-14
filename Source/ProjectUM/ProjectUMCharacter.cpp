@@ -120,49 +120,50 @@ AProjectUMCharacter::AProjectUMCharacter()
 }
 
 void AProjectUMCharacter::InitStats() {
+
 	//Initialize the player's Health
 	BaseHealth = 100.0f;
 	MaxHealth = 100.0f;
 	CurrentHealth = 100.0f;
 	BaseStatsMap.Add(ECharacterStatEnum::HEALTH, BaseHealth);
-	BaseStatsMap.Add(ECharacterStatEnum::HEALTH, MaxHealth);
-	BaseStatsMap.Add(ECharacterStatEnum::HEALTH, CurrentHealth);
+	MaxStatsMap.Add(ECharacterStatEnum::HEALTH, MaxHealth);
+	CurrentStatsMap.Add(ECharacterStatEnum::HEALTH, CurrentHealth);
 
 
 	BaseMana = 100.0f;
 	MaxMana = 100.0f;
 	CurrentMana = 100.0f;
 	BaseStatsMap.Add(ECharacterStatEnum::MANA, BaseMana);
-	BaseStatsMap.Add(ECharacterStatEnum::MANA, MaxMana);
-	BaseStatsMap.Add(ECharacterStatEnum::MANA, CurrentMana);
+	MaxStatsMap.Add(ECharacterStatEnum::MANA, MaxMana);
+	CurrentStatsMap.Add(ECharacterStatEnum::MANA, CurrentMana);
 
 	BaseAgility = 100.0f;
 	MaxAgility = 100.0f;
 	CurrentAgility = 100.0f;
 	BaseStatsMap.Add(ECharacterStatEnum::AGILITY, BaseAgility);
-	BaseStatsMap.Add(ECharacterStatEnum::AGILITY, MaxAgility);
-	BaseStatsMap.Add(ECharacterStatEnum::AGILITY, CurrentAgility);
+	MaxStatsMap.Add(ECharacterStatEnum::AGILITY, MaxAgility);
+	CurrentStatsMap.Add(ECharacterStatEnum::AGILITY, CurrentAgility);
 
 	BaseWisdom = 100.0f;
 	MaxWisdom = 100.0f;
 	CurrentWisdom = 100.0f;
 	BaseStatsMap.Add(ECharacterStatEnum::WISDOM, BaseWisdom);
-	BaseStatsMap.Add(ECharacterStatEnum::WISDOM, MaxWisdom);
-	BaseStatsMap.Add(ECharacterStatEnum::WISDOM, CurrentWisdom);
+	MaxStatsMap.Add(ECharacterStatEnum::WISDOM, MaxWisdom);
+	CurrentStatsMap.Add(ECharacterStatEnum::WISDOM, CurrentWisdom);
 
 	BaseIntellect = 100.0f;
 	CurrentIntellect = 100.0f;
 	MaxIntellect = 100.0f;
 	BaseStatsMap.Add(ECharacterStatEnum::INTELLECT, BaseIntellect);
-	BaseStatsMap.Add(ECharacterStatEnum::INTELLECT, CurrentIntellect);
-	BaseStatsMap.Add(ECharacterStatEnum::INTELLECT, MaxIntellect);
+	MaxStatsMap.Add(ECharacterStatEnum::INTELLECT, CurrentIntellect);
+	CurrentStatsMap.Add(ECharacterStatEnum::INTELLECT, MaxIntellect);
 
 	BaseStrength = 100.0f;
 	CurrentStrength = 100.0f;
 	MaxStrength = 100.0f;
 	BaseStatsMap.Add(ECharacterStatEnum::STRENGTH, BaseStrength);
-	BaseStatsMap.Add(ECharacterStatEnum::STRENGTH, CurrentStrength);
-	BaseStatsMap.Add(ECharacterStatEnum::STRENGTH, MaxStrength);
+	MaxStatsMap.Add(ECharacterStatEnum::STRENGTH, CurrentStrength);
+	CurrentStatsMap.Add(ECharacterStatEnum::STRENGTH, MaxStrength);
 }
 
 // Called every frame
@@ -399,6 +400,61 @@ void AProjectUMCharacter::SetCurrentHealth(float healthValue)
 	}
 }
 
+void AProjectUMCharacter::SetCurrentStat(ECharacterStatEnum Stat, float Value)
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		switch (Stat) {
+		case ECharacterStatEnum::HEALTH:
+			CurrentHealth = Value;
+			OnCurrentStatUpdate(ECharacterStatEnum::HEALTH, Value);
+		case ECharacterStatEnum::MANA:
+			 CurrentMana = Value;
+			 OnCurrentStatUpdate(ECharacterStatEnum::MANA, Value);
+		case ECharacterStatEnum::AGILITY:
+			 CurrentAgility = Value;
+			 OnCurrentStatUpdate(ECharacterStatEnum::AGILITY, Value);
+		case ECharacterStatEnum::STRENGTH:
+			 CurrentStrength = Value;
+			 OnCurrentStatUpdate(ECharacterStatEnum::STRENGTH, Value);
+		case ECharacterStatEnum::WISDOM:
+			 CurrentWisdom = Value;
+			 OnCurrentStatUpdate(ECharacterStatEnum::WISDOM, Value);
+		case ECharacterStatEnum::INTELLECT:
+			 CurrentIntellect = Value;
+			 OnCurrentStatUpdate(ECharacterStatEnum::INTELLECT, Value);
+		}
+	}
+}
+
+void AProjectUMCharacter::SetMaxStat(ECharacterStatEnum Stat, float Value)
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		switch (Stat) {
+		case ECharacterStatEnum::HEALTH:
+			MaxHealth = Value;
+			OnMaxStatUpdate(ECharacterStatEnum::HEALTH, Value);
+			OnHealthUpdate();
+		case ECharacterStatEnum::MANA:
+			 MaxMana = Value;
+			 OnMaxStatUpdate(ECharacterStatEnum::MANA, Value);
+		case ECharacterStatEnum::AGILITY:
+			 MaxAgility = Value;
+			 OnMaxStatUpdate(ECharacterStatEnum::AGILITY, Value);
+		case ECharacterStatEnum::STRENGTH:
+			 MaxStrength = Value;
+			 OnMaxStatUpdate(ECharacterStatEnum::STRENGTH, Value);
+		case ECharacterStatEnum::WISDOM:
+			 MaxWisdom = Value;
+			 OnMaxStatUpdate(ECharacterStatEnum::WISDOM, Value);
+		case ECharacterStatEnum::INTELLECT:
+			 MaxIntellect = Value;
+			 OnMaxStatUpdate(ECharacterStatEnum::INTELLECT, Value);
+		}
+	}
+}
+
 float AProjectUMCharacter::TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	float damageApplied = CurrentHealth - DamageTaken;
@@ -615,7 +671,7 @@ void AProjectUMCharacter::SpawnItems_Implementation() {
 void AProjectUMCharacter::AttachEquipment(TSubclassOf<AProjectUMEquipment> Equipment, EEquippableSlotsEnum EquipSlot) {
 	if (GetLocalRole() == ROLE_Authority) {
 		EquipmentClassMap.Add(EquipSlot, Equipment);
-		SetCurrentMaxHealth(MaxHealth + Inventory->EquipmentMap.FindRef(EquipSlot)->HealthAmount);
+		IncreaseStats(Inventory->EquipmentMap.FindRef(EquipSlot)->Stats);
 		StartEquipping(EquipSlot);
 	}
 }
@@ -624,7 +680,33 @@ void AProjectUMCharacter::DeAttachEquipment(EEquippableSlotsEnum EquipSlot) {
 	if (GetLocalRole() == ROLE_Authority) {
 		EquipmentClassMap.FindRef(EquipSlot) = nullptr;
 		EquippedItemMap.FindRef(EquipSlot)->Destroy();
-		SetCurrentMaxHealth(MaxHealth - Inventory->EquipmentMap.FindRef(EquipSlot)->HealthAmount);
+		DecreaseStats(Inventory->EquipmentMap.FindRef(EquipSlot)->Stats);
+	}
+}
+
+void AProjectUMCharacter::IncreaseStats(TMap<ECharacterStatEnum, float> StatsMap) {
+	if (GetLocalRole() == ROLE_Authority) {
+		for (TPair<ECharacterStatEnum, float>& Kvp : StatsMap)
+		{
+			if (Kvp.Key != ECharacterStatEnum::HEALTH && Kvp.Key != ECharacterStatEnum::MANA) {
+				SetCurrentStat(Kvp.Key, Kvp.Value + CurrentStatsMap.FindRef(Kvp.Key));
+			}
+			SetMaxStat(Kvp.Key, Kvp.Value + MaxStatsMap.FindRef(Kvp.Key));
+
+		}
+	}
+}
+
+void AProjectUMCharacter::DecreaseStats(TMap<ECharacterStatEnum, float> StatsMap) {
+	if (GetLocalRole() == ROLE_Authority) {
+		for (TPair<ECharacterStatEnum, float>& Kvp : StatsMap)
+		{
+			if (Kvp.Key != ECharacterStatEnum::HEALTH && Kvp.Key != ECharacterStatEnum::MANA) {
+				SetCurrentStat(Kvp.Key,CurrentStatsMap.FindRef(Kvp.Key) - Kvp.Value);
+			}
+			SetMaxStat(Kvp.Key, MaxStatsMap.FindRef(Kvp.Key) - Kvp.Value);
+
+		}
 	}
 }
 

@@ -43,43 +43,13 @@ class AProjectUMCharacter : public ACharacter, public IInteractableObjectInterfa
 
 public:
 	UFUNCTION(BlueprintPure)
-		float GetCurrentStat(ECharacterStatEnum Stat) { 
-		switch (Stat) {
-		case ECharacterStatEnum::HEALTH:
-			return CurrentHealth;
-		case ECharacterStatEnum::MANA:
-			return CurrentMana;
-		case ECharacterStatEnum::AGILITY:
-			return CurrentAgility;
-		case ECharacterStatEnum::STRENGTH:
-			return CurrentStrength;
-		case ECharacterStatEnum::WISDOM:
-			return CurrentWisdom;
-		case ECharacterStatEnum::INTELLECT:
-			return CurrentIntellect;
-		default: return 0.0f;
-		}
+		float GetCurrentStat(ECharacterStatEnum Stat) {
+		return CurrentStatsMap[Stat];
 	}
 
 	UFUNCTION(BlueprintPure)
 		float GetMaxStat(ECharacterStatEnum Stat) { 
-
-		switch (Stat) {
-			case ECharacterStatEnum::HEALTH:
-				return MaxHealth;
-			case ECharacterStatEnum::MANA:
-				return MaxMana;
-			case ECharacterStatEnum::AGILITY:
-				return MaxAgility;
-			case ECharacterStatEnum::STRENGTH:
-				return MaxStrength;
-			case ECharacterStatEnum::WISDOM:
-				return MaxWisdom;
-			case ECharacterStatEnum::INTELLECT:
-				return MaxIntellect;
-			default: return 0.0f;
-		}
-
+		return MaxStatsMap[Stat];
 	}
 
 	UFUNCTION(BlueprintPure)
@@ -134,6 +104,17 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		void SetCurrentMaxHealth(float healthValue);
+
+	UFUNCTION(BlueprintCallable, Category = "Health")
+		void SetCurrentStat(ECharacterStatEnum Stat, float Value);
+
+	UFUNCTION(BlueprintCallable, Category = "Health")
+		void SetMaxStat(ECharacterStatEnum Stat, float Value);
+
+	UFUNCTION()
+		void IncreaseStats(TMap<ECharacterStatEnum, float> Stats);
+	UFUNCTION()
+		void DecreaseStats(TMap<ECharacterStatEnum, float> Stats);
 
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;

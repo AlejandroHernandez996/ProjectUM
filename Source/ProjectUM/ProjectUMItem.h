@@ -52,8 +52,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 		UStaticMesh* PickupMesh;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+		TMap<ECharacterStatEnum, float> Stats;
+
 	UPROPERTY()
 		class UProjectUMInventoryComponent* OwningInventory;
 
 	virtual void Use(class AProjectUMCharacter* CharacterUser);
+
+public:
+	UFUNCTION()
+		float GetStat(ECharacterStatEnum Stat) {
+			return Stats.FindRef(Stat);
+		};
 };
