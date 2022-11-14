@@ -41,8 +41,11 @@ public:
 		UProjectUMInventoryComponent* GetInventory() { return Inventory; }
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Iventory", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 		class UProjectUMInventoryComponent* Inventory;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
+		class UProjectUMLootTable* LootTable;
 
 	UPROPERTY(EditAnywhere, Category = "Effects")
 		class UParticleSystem* ExplosionEffect;

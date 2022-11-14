@@ -11,6 +11,7 @@
 #include "Particles/ParticleSystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectUMProjectile.h"
+#include "ProjectUMLootTable.h"
 
 // Sets default values
 AProjectUmNpc::AProjectUmNpc()
@@ -23,7 +24,9 @@ AProjectUmNpc::AProjectUmNpc()
 
 	// Create an inventory
 	Inventory = CreateDefaultSubobject<UProjectUMInventoryComponent>("Inventory");
+	LootTable = CreateDefaultSubobject<UProjectUMLootTable>("LootTable");
 	Inventory->Capacity = 20;
+	LootTable->OwningNpc = this;
 
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> DefaultExplosionEffect(TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));
 	if (DefaultExplosionEffect.Succeeded())
@@ -36,11 +39,6 @@ AProjectUmNpc::AProjectUmNpc()
 void AProjectUmNpc::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetLocalRole() == ROLE_Authority) {
-		for (auto& Item : Inventory->DefaultItems) {
-			Inventory->AddItem(Item);
-		}
-	}
 }
 
 // Called every frame
@@ -70,6 +68,12 @@ void AProjectUmNpc::OnHealthUpdate()
 		Any special functionality that should occur as a result of damage or death should be placed here.
 	*/
 	UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, this->GetActorLocation(), FRotator::ZeroRotator, true, EPSCPoolMethod::AutoRelease);
+	if (GetLocalRole() == ROLE_Authority && CurrentHealth == 0.0f && Inventory->Items.IsEmpty()) {
+			LootTable->GenerateLoot();
+			for (auto& Item : LootTable->GetLoot()) {
+				Inventory->AddItem(Item);
+			}
+	}
 
 }
 void AProjectUmNpc::SetCurrentHealth(float healthValue)
