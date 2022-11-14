@@ -8,6 +8,8 @@
 #include "Engine/Engine.h"
 #include "ProjectUMCharacter.h"
 #include "ProjectUMInventoryComponent.h"
+#include "Particles/ParticleSystem.h"
+#include "Kismet/GameplayStatics.h"
 #include "ProjectUMProjectile.h"
 
 // Sets default values
@@ -22,6 +24,12 @@ AProjectUmNpc::AProjectUmNpc()
 	// Create an inventory
 	Inventory = CreateDefaultSubobject<UProjectUMInventoryComponent>("Inventory");
 	Inventory->Capacity = 20;
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> DefaultExplosionEffect(TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));
+	if (DefaultExplosionEffect.Succeeded())
+	{
+		ExplosionEffect = DefaultExplosionEffect.Object;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -61,6 +69,8 @@ void AProjectUmNpc::OnHealthUpdate()
 	/*
 		Any special functionality that should occur as a result of damage or death should be placed here.
 	*/
+	UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, this->GetActorLocation(), FRotator::ZeroRotator, true, EPSCPoolMethod::AutoRelease);
+
 }
 void AProjectUmNpc::SetCurrentHealth(float healthValue)
 {

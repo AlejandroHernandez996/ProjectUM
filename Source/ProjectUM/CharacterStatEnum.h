@@ -6,7 +6,12 @@
 #include "CharacterStatEnum.generated.h"
 
 UENUM(BlueprintType)
-enum class CharacterStatEnum : uint8
+enum class ECharacterStatEnum : uint8
 {
-	HEALTH
+	HEALTH,
+	MANA,
+	AGILITY,
+	STRENGTH,
+	INTELLECT,
+	WISDOM
 };

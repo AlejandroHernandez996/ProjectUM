@@ -44,6 +44,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Iventory", meta = (AllowPrivateAccess = "true"))
 		class UProjectUMInventoryComponent* Inventory;
 
+	UPROPERTY(EditAnywhere, Category = "Effects")
+		class UParticleSystem* ExplosionEffect;
+
 	/** The player's maximum health. This is the highest value of their health can be. This value is a value of the player's health, which starts at when spawned.*/
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
 		float MaxHealth;

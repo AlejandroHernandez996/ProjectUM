@@ -20,6 +20,7 @@
 #include "ProjectUMItem.h"
 #include "ProjectUMPickableItem.h"
 #include "ProjectUmNpc.h"
+#include "ProjectUMCharacterStatsStruct.h"
 #include "ProjectUMLootableProp.h"
 #include "ProjectUMInventoryComponent.h"
 
@@ -32,13 +33,11 @@ AProjectUMCharacter::AProjectUMCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 	PrimaryActorTick.bCanEverTick = true;
 
-	//Initialize the player's Health
-	BaseMaxHealth = 100.0f;
-	MaxHealth = BaseMaxHealth;
-	CurrentHealth = MaxHealth;
+	InitStats();
 
 	//Initialize projectile class
 	ProjectileClass = AProjectUmProjectile::StaticClass();
+
 	//Initialize fire rate
 	FireRate = 0.25f;
 	bIsFiringWeapon = false;
@@ -118,6 +117,52 @@ AProjectUMCharacter::AProjectUMCharacter()
 	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::CHEST, "spine_05");
 	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::LEGS, "pelvis");
 
+}
+
+void AProjectUMCharacter::InitStats() {
+	//Initialize the player's Health
+	BaseHealth = 100.0f;
+	MaxHealth = 100.0f;
+	CurrentHealth = 100.0f;
+	BaseStatsMap.Add(ECharacterStatEnum::HEALTH, BaseHealth);
+	BaseStatsMap.Add(ECharacterStatEnum::HEALTH, MaxHealth);
+	BaseStatsMap.Add(ECharacterStatEnum::HEALTH, CurrentHealth);
+
+
+	BaseMana = 100.0f;
+	MaxMana = 100.0f;
+	CurrentMana = 100.0f;
+	BaseStatsMap.Add(ECharacterStatEnum::MANA, BaseMana);
+	BaseStatsMap.Add(ECharacterStatEnum::MANA, MaxMana);
+	BaseStatsMap.Add(ECharacterStatEnum::MANA, CurrentMana);
+
+	BaseAgility = 100.0f;
+	MaxAgility = 100.0f;
+	CurrentAgility = 100.0f;
+	BaseStatsMap.Add(ECharacterStatEnum::AGILITY, BaseAgility);
+	BaseStatsMap.Add(ECharacterStatEnum::AGILITY, MaxAgility);
+	BaseStatsMap.Add(ECharacterStatEnum::AGILITY, CurrentAgility);
+
+	BaseWisdom = 100.0f;
+	MaxWisdom = 100.0f;
+	CurrentWisdom = 100.0f;
+	BaseStatsMap.Add(ECharacterStatEnum::WISDOM, BaseWisdom);
+	BaseStatsMap.Add(ECharacterStatEnum::WISDOM, MaxWisdom);
+	BaseStatsMap.Add(ECharacterStatEnum::WISDOM, CurrentWisdom);
+
+	BaseIntellect = 100.0f;
+	CurrentIntellect = 100.0f;
+	MaxIntellect = 100.0f;
+	BaseStatsMap.Add(ECharacterStatEnum::INTELLECT, BaseIntellect);
+	BaseStatsMap.Add(ECharacterStatEnum::INTELLECT, CurrentIntellect);
+	BaseStatsMap.Add(ECharacterStatEnum::INTELLECT, MaxIntellect);
+
+	BaseStrength = 100.0f;
+	CurrentStrength = 100.0f;
+	MaxStrength = 100.0f;
+	BaseStatsMap.Add(ECharacterStatEnum::STRENGTH, BaseStrength);
+	BaseStatsMap.Add(ECharacterStatEnum::STRENGTH, CurrentStrength);
+	BaseStatsMap.Add(ECharacterStatEnum::STRENGTH, MaxStrength);
 }
 
 // Called every frame
@@ -231,16 +276,39 @@ void AProjectUMCharacter::GetLifetimeReplicatedProps(TArray <FLifetimeProperty>&
 	//Replicate current health.
 	DOREPLIFETIME(AProjectUMCharacter, CurrentHealth);
 	DOREPLIFETIME(AProjectUMCharacter, MaxHealth);
+	DOREPLIFETIME(AProjectUMCharacter, BaseHealth);
+
+	DOREPLIFETIME(AProjectUMCharacter, CurrentAgility);
+	DOREPLIFETIME(AProjectUMCharacter, MaxAgility);
+	DOREPLIFETIME(AProjectUMCharacter, BaseAgility);
+
+	DOREPLIFETIME(AProjectUMCharacter, CurrentStrength);
+	DOREPLIFETIME(AProjectUMCharacter, MaxStrength);
+	DOREPLIFETIME(AProjectUMCharacter, BaseStrength);
+
+	DOREPLIFETIME(AProjectUMCharacter, CurrentMana);
+	DOREPLIFETIME(AProjectUMCharacter, MaxMana);
+	DOREPLIFETIME(AProjectUMCharacter, BaseMana);
+
+	DOREPLIFETIME(AProjectUMCharacter, CurrentIntellect);
+	DOREPLIFETIME(AProjectUMCharacter, MaxIntellect);
+	DOREPLIFETIME(AProjectUMCharacter, BaseIntellect);
+
+	DOREPLIFETIME(AProjectUMCharacter, CurrentWisdom);
+	DOREPLIFETIME(AProjectUMCharacter, MaxWisdom);
+	DOREPLIFETIME(AProjectUMCharacter, BaseWisdom);
+
 }
 
 void AProjectUMCharacter::OnRep_CurrentHealth()
 {
+	OnCurrentStatUpdate(ECharacterStatEnum::HEALTH, CurrentHealth);
 	OnHealthUpdate();
 }
 
 void AProjectUMCharacter::OnRep_MaxHealth()
 {
-	
+	OnMaxStatUpdate(ECharacterStatEnum::HEALTH, MaxHealth);
 }
 
 void AProjectUMCharacter::OnHealthUpdate()
@@ -258,6 +326,54 @@ void AProjectUMCharacter::OnHealthUpdate()
 		}
 		
 }
+
+void AProjectUMCharacter::OnCurrentStatUpdate(ECharacterStatEnum Stat, float Value)
+{
+	CurrentStatsMap.Add(Stat, Value);
+	OnCurrentStatUpdateClient(Stat, Value);
+}
+
+void AProjectUMCharacter::OnMaxStatUpdate(ECharacterStatEnum Stat, float Value)
+{
+	MaxStatsMap.Add(Stat, Value);
+	OnMaxStatUpdateClient(Stat, Value);
+}
+
+void AProjectUMCharacter::OnCurrentStatUpdateClient_Implementation(ECharacterStatEnum Stat, float Value) {
+	CurrentStatsMap.Add(Stat, Value);
+}
+
+void AProjectUMCharacter::OnMaxStatUpdateClient_Implementation(ECharacterStatEnum Stat, float Value) {
+	MaxStatsMap.Add(Stat, Value);
+}
+
+void AProjectUMCharacter::OnRep_MaxMana()
+{
+	OnMaxStatUpdate(ECharacterStatEnum::MANA, MaxMana);
+}
+
+void AProjectUMCharacter::OnRep_CurrentMana()
+{
+	OnCurrentStatUpdate(ECharacterStatEnum::MANA, CurrentMana);
+}
+
+void AProjectUMCharacter::OnRep_CurrentAgility()
+{
+	OnCurrentStatUpdate(ECharacterStatEnum::AGILITY, CurrentAgility);
+}
+void AProjectUMCharacter::OnRep_CurrentStrength()
+{
+	OnCurrentStatUpdate(ECharacterStatEnum::STRENGTH, CurrentStrength);
+}
+void AProjectUMCharacter::OnRep_CurrentWisdom()
+{
+	OnCurrentStatUpdate(ECharacterStatEnum::WISDOM, CurrentWisdom);
+}
+void AProjectUMCharacter::OnRep_CurrentIntellect()
+{
+	OnCurrentStatUpdate(ECharacterStatEnum::INTELLECT, CurrentIntellect);
+}
+
 
 void AProjectUMCharacter::SetCurrentMaxHealth(float healthValue)
 {
@@ -566,23 +682,21 @@ void AProjectUMCharacter::OnInteractOverlapEnd(UPrimitiveComponent* OverlappedCo
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 		InteractableObjects.Remove(InteractableObject);
 
-		if (!LootingInventory) return;
-
 		AProjectUMCharacter* OtherCharacter = Cast<AProjectUMCharacter>(OtherActor);
 		if (OtherCharacter && OtherCharacter->Inventory == LootingInventory) {
 			LootingInventory = nullptr;
-			OpenLoot();
+			CloseLoot();
 		}
 		AProjectUmNpc* OtherNpc = Cast<AProjectUmNpc>(OtherActor);
 		if (OtherNpc && OtherNpc->GetInventory() == LootingInventory) {
 			LootingInventory = nullptr;
-			OpenLoot();
+			CloseLoot();
 		}
 
 		AProjectUMLootableProp* OtherProp = Cast<AProjectUMLootableProp>(OtherActor);
 		if (OtherProp && OtherProp->GetInventory() == LootingInventory) {
 			LootingInventory = nullptr;
-			OpenLoot();
+			CloseLoot();
 		}
 
 	}
@@ -594,14 +708,17 @@ void AProjectUMCharacter::AddItemToInventory_Implementation(UProjectUMItem* Item
 }
 
 void AProjectUMCharacter::BroadcastNpcLoot_Implementation(const TArray<int32>& ItemIds) {
-	FString msg = "BROADCASTING NPC LOOT :)";
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-
 	OnNpcCorpseInteracted.Broadcast(ItemIds);
 }
 
 void AProjectUMCharacter::OpenLoot_Implementation() {
 	OnNpcCorpseInteractedOpenLootWidget.Broadcast();
+}
+
+void AProjectUMCharacter::CloseLoot_Implementation() {
+	FString msg = "Closing loot";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
+	OnExitLootRange.Broadcast();
 }
 
 void AProjectUMCharacter::BroadcastInventory_Implementation() {
@@ -617,7 +734,9 @@ void AProjectUMCharacter::BroadcastInventory_Implementation() {
 	BroadcastInventoryToClient(Inventory->GetAllInventoryItemIds(), EquippedItemIds);
 }
 
-void AProjectUMCharacter::OpenInventory_Implementation() {
+void AProjectUMCharacter::OpenInventory() {
+	FString healthMessage = "Opening Iventory";
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
 	OnInventoryOpen.Broadcast();
 }
 

@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InteractableObjectInterface.h"
+#include "CharacterStatEnum.h"
 #include "ProjectUMCharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNpcCorpseInteracted, const TArray<int32>&, ItemIds);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNpcCorpseInteractedOpenLootWidget);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExitLootRange);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventoryOpenDisplayItems, const TArray<int32>&, InventoryItemIds, const TArray<int32>&, EquippedItemsIds);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryOpen);
-
 
 UCLASS(config=Game)
 class AProjectUMCharacter : public ACharacter, public IInteractableObjectInterface
@@ -29,6 +30,60 @@ class AProjectUMCharacter : public ACharacter, public IInteractableObjectInterfa
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Iventory", meta = (AllowPrivateAccess = "true"))
 		class UProjectUMInventoryComponent* LootingInventory;
+
+	struct FProjectUMCharacterStatsStruct* Stats;
+
+	TMap<ECharacterStatEnum, float> MaxStatsMap;
+
+	TMap<ECharacterStatEnum, float> CurrentStatsMap;
+
+	TMap<ECharacterStatEnum, float> BaseStatsMap;
+
+	void InitStats();
+
+public:
+	UFUNCTION(BlueprintPure)
+		float GetCurrentStat(ECharacterStatEnum Stat) { 
+		switch (Stat) {
+		case ECharacterStatEnum::HEALTH:
+			return CurrentHealth;
+		case ECharacterStatEnum::MANA:
+			return CurrentMana;
+		case ECharacterStatEnum::AGILITY:
+			return CurrentAgility;
+		case ECharacterStatEnum::STRENGTH:
+			return CurrentStrength;
+		case ECharacterStatEnum::WISDOM:
+			return CurrentWisdom;
+		case ECharacterStatEnum::INTELLECT:
+			return CurrentIntellect;
+		default: return 0.0f;
+		}
+	}
+
+	UFUNCTION(BlueprintPure)
+		float GetMaxStat(ECharacterStatEnum Stat) { 
+
+		switch (Stat) {
+			case ECharacterStatEnum::HEALTH:
+				return MaxHealth;
+			case ECharacterStatEnum::MANA:
+				return MaxMana;
+			case ECharacterStatEnum::AGILITY:
+				return MaxAgility;
+			case ECharacterStatEnum::STRENGTH:
+				return MaxStrength;
+			case ECharacterStatEnum::WISDOM:
+				return MaxWisdom;
+			case ECharacterStatEnum::INTELLECT:
+				return MaxIntellect;
+			default: return 0.0f;
+		}
+
+	}
+
+	UFUNCTION(BlueprintPure)
+		float GetBaseStat(ECharacterStatEnum Stat) { return BaseStatsMap.FindRef(Stat); }
 
 public:
 	AProjectUMCharacter();
@@ -53,6 +108,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 		FOnInventoryOpen OnInventoryOpen;
 
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+		FOnExitLootRange OnExitLootRange;
 
 	virtual void BeginPlay() override;
 
@@ -151,15 +209,6 @@ protected:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Health", ReplicatedUsing = OnRep_MaxHealth)
-		float MaxHealth;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Health")
-		float BaseMaxHealth;
-
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentHealth)
-		float CurrentHealth;
-
 	UFUNCTION()
 		void OnRep_CurrentHealth();
 
@@ -167,6 +216,80 @@ protected:
 		void OnRep_MaxHealth();
 
 	void OnHealthUpdate();
+
+	void OnCurrentStatUpdate(ECharacterStatEnum Stat, float Value);
+
+	void OnMaxStatUpdate(ECharacterStatEnum Stat, float Value);
+	
+	UFUNCTION(Client, Reliable)
+	void OnCurrentStatUpdateClient(ECharacterStatEnum Stat, float Value);
+
+	UFUNCTION(Client, Reliable)
+	void OnMaxStatUpdateClient(ECharacterStatEnum Stat, float Value);
+
+	void OnCurrentStatUpdateClient_Implementation(ECharacterStatEnum Stat, float Value);
+
+	void OnMaxStatUpdateClient_Implementation(ECharacterStatEnum Stat, float Value);
+
+	UFUNCTION()
+		void OnRep_CurrentMana();
+
+	UFUNCTION()
+		void OnRep_MaxMana();
+
+	UFUNCTION()
+		void OnRep_CurrentStrength();
+
+	UFUNCTION()
+		void OnRep_CurrentAgility();
+
+	UFUNCTION()
+		void OnRep_CurrentWisdom();
+
+	UFUNCTION()
+		void OnRep_CurrentIntellect();
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float BaseMaxHealth;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float BaseHealth;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float BaseMana;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float BaseAgility;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float BaseStrength;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float BaseIntellect;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float BaseWisdom;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_MaxHealth)
+		float MaxHealth;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_MaxMana)
+		float MaxMana;							   
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float MaxAgility;						   
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float MaxStrength;						  
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float MaxIntellect;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
+		float MaxWisdom;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentHealth)
+		float CurrentHealth;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentMana)
+		float CurrentMana;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentAgility)
+		float CurrentAgility;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentStrength)
+		float CurrentStrength;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentIntellect)
+		float CurrentIntellect;
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentWisdom)
+		float CurrentWisdom;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay|Projectile")
 		TSubclassOf<class AProjectUmProjectile> ProjectileClass;
@@ -296,6 +419,11 @@ public:
 
 	void OpenLoot_Implementation();
 
+	UFUNCTION(Client, Reliable, Category = "Interaction")
+		void CloseLoot();
+
+	void CloseLoot_Implementation();
+
 	UFUNCTION(Server, Reliable, Category = "Interaction")
 		void BroadcastInventory();
 
@@ -306,10 +434,8 @@ public:
 
 	void BroadcastInventoryToClient_Implementation(const TArray<int32>& InventoryItemIds, const TArray<int32>& EquippedItemIds);
 
-	UFUNCTION(Client, Reliable, Category = "Interaction")
-		void OpenInventory();
+	void OpenInventory();
 
-	void OpenInventory_Implementation();
 
 protected:
 	void Interact_Implementation(AProjectUMCharacter* Interactor) override;
