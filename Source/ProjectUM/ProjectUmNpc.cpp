@@ -152,6 +152,16 @@ void AProjectUmNpc::SetCurrentHealth(float healthValue)
 
 float AProjectUmNpc::TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (State == ENpcState::DEAD) {
+		return 0.0f;
+	}
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		if (EventInstigator->GetPawn()->IsA(AProjectUMCharacter::StaticClass())) {
+			FocusPawn = EventInstigator->GetPawn();
+			State = ENpcState::AGGRESIVE;
+		}
+	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("npc tooK damage"));
 	float damageApplied = CurrentHealth - DamageTaken;
 	SetCurrentHealth(damageApplied);

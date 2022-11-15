@@ -658,7 +658,7 @@ void AProjectUMCharacter::HandleDropItemServer_Implementation(int32 ItemId)
 	PickableItem->SetStaticMesh(Item->PickupMesh);
 	PickableItem->SetItem(Item);
 	PickableItem->StaticMesh->SetCollisionProfileName("NoCollision");
-	Inventory->RemoveItem(Item);
+	Inventory->DropItem(Item);
 	BroadcastInventory();
 }
 

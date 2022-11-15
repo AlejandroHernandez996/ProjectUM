@@ -34,6 +34,9 @@ public:
 		void RemoveItem(class UProjectUMItem* Item);
 
 	UFUNCTION()
+		void DropItem(class UProjectUMItem* Item);
+
+	UFUNCTION()
 		void RemoveStackableItem(class UProjectUMItem* StackableItem, int Amount);
 
 	UFUNCTION()

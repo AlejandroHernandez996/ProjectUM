@@ -63,6 +63,20 @@ void UProjectUMInventoryComponent::RemoveItem(UProjectUMItem* Item)
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("REMOVE ITEM"));
 }
 
+void UProjectUMInventoryComponent::DropItem(UProjectUMItem* Item)
+{
+	if (!Item) {
+		return;
+	}
+	Item->OwningInventory = nullptr;
+	Item->World = nullptr;
+	Items.Remove(Item);
+	UpdateInventoryToLootingCharacters();
+	if (OwningCharacter) {
+		OwningCharacter->BroadcastInventory();
+	}
+}
+
 void UProjectUMInventoryComponent::AddStackableItem(UProjectUMItem* StackableItem, int32 Amount)
 {
 	for (auto& Item : Items) {
