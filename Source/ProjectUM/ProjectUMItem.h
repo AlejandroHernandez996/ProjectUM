@@ -3,20 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ProjectUMItemRarityEnum.h"
 #include "ProjectUMItem.generated.h"
-
-UENUM(BlueprintType)
-namespace RarityEnum
-{
-	enum Rarity
-	{
-		COMMON UMETA(DisplayName = "COMMON"),
-		UNCOMMON = 1  UMETA(DisplayName = "UNCOMMON"),
-		RARE = 2 UMETA(DisplayName = "RARE"),
-		EPIC = 3 UMETA(DisplayName = "EPIC"),
-		LEGENDARY = 4 UMETA(DisplayName = "LEGENDARY")
-	};
-}
 
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
 class PROJECTUM_API UProjectUMItem : public UDataAsset
@@ -44,7 +32,7 @@ public:
 		float ItemInventoryWeight;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
-		TEnumAsByte<RarityEnum::Rarity> ItemRarity = RarityEnum::Rarity::COMMON;
+		EProjectUMItemRarityEnum ItemRarity = EProjectUMItemRarityEnum::COMMON;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 		UTexture2D* Thumbnail;
@@ -85,4 +73,18 @@ public:
 		int32 _StackSize;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 		bool _bIsStackable;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		EProjectUMItemRarityEnum _Rarity;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		float _Health;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		float _Mana;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		float _Agility;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		float _Intellect;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		float _Strength;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		float _Wisdom;
 };

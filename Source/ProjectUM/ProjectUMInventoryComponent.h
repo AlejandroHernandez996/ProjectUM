@@ -94,4 +94,6 @@ public:
 		}
 		return nullptr;
 	}
+	UFUNCTION()
+		FItemStruct CreateItemStruct(class UProjectUMItem* Item);
 };

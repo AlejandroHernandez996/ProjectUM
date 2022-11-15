@@ -145,11 +145,7 @@ TArray<FItemStruct> UProjectUMInventoryComponent::GetAllInventoryItems() {
 	TArray<FItemStruct> InventoryItems = TArray<FItemStruct>();
 	for (auto& Item : Items) {
 		if (Item) {
-			FItemStruct ItemStruct;
-			ItemStruct._bIsStackable = Item->bIsStackable;
-			ItemStruct._ItemId = Item->ItemId;
-			ItemStruct._StackSize = Item->StackSize;
-			InventoryItems.Add(ItemStruct);
+			InventoryItems.Add(CreateItemStruct(Item));
 		}
 	}
 	return InventoryItems;
@@ -162,16 +158,27 @@ TArray<FItemStruct> UProjectUMInventoryComponent::GetAllEquippedItems() {
 	TArray<FItemStruct> EquippedItemStructs = TArray<FItemStruct>();
 	for (auto& Item : EquippedItems) {
 		if (Item) {
-			FItemStruct ItemStruct;
-			ItemStruct._bIsStackable = Item->bIsStackable;
-			ItemStruct._ItemId = Item->ItemId;
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, "Item Id:" + FString::FromInt(ItemStruct._ItemId));
-			ItemStruct._StackSize = Item->StackSize;
-			EquippedItemStructs.Add(ItemStruct);
+			EquippedItemStructs.Add(CreateItemStruct(Item));
 		}
 	}
 	return EquippedItemStructs;
 }
 
+
+FItemStruct UProjectUMInventoryComponent::CreateItemStruct(UProjectUMItem* Item) {
+	FItemStruct ItemStruct;
+	ItemStruct._bIsStackable = Item->bIsStackable;
+	ItemStruct._ItemId = Item->ItemId;
+	ItemStruct._StackSize = Item->StackSize;
+	ItemStruct._Rarity = Item->ItemRarity;
+	ItemStruct._Agility = Item->Stats.FindRef(ECharacterStatEnum::AGILITY);
+	ItemStruct._Strength = Item->Stats.FindRef(ECharacterStatEnum::STRENGTH);
+	ItemStruct._Intellect = Item->Stats.FindRef(ECharacterStatEnum::INTELLECT);
+	ItemStruct._Wisdom = Item->Stats.FindRef(ECharacterStatEnum::WISDOM);
+	ItemStruct._Health = Item->Stats.FindRef(ECharacterStatEnum::HEALTH);
+	ItemStruct._Mana = Item->Stats.FindRef(ECharacterStatEnum::INTELLECT);
+
+	return ItemStruct;
+}
 
 

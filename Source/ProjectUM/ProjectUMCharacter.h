@@ -418,6 +418,12 @@ public:
 
 	void OpenInventory();
 
+	void Disconnect();
+
+	UFUNCTION(Client, Reliable)
+		void DisconnectClient();
+
+	void DisconnectClient_Implementation();
 
 protected:
 	void Interact_Implementation(AProjectUMCharacter* Interactor) override;

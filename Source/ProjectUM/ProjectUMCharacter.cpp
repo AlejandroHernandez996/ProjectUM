@@ -24,6 +24,7 @@
 #include "ProjectUMLootableProp.h"
 #include "ProjectUMItemGenerator.h"
 #include "ProjectUMResource.h"
+#include "Engine/GameInstance.h"
 #include "ProjectUMInventoryComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -544,9 +545,7 @@ void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedCo
 	UProjectUMEquippableItem* HandItem = Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND);
 	AProjectUMResource* ResourceObject = Cast<AProjectUMResource>(OtherActor);
 	IProjectUMItemGenerator* ItemGeneratorObject = Cast<IProjectUMItemGenerator>(OtherActor);
-	if (ResourceObject) {
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, HandItem->GetName() + " " + ResourceObject->GetName());
-	}
+	
 	if (HandItem && ResourceObject && HandItem->ToolType == ResourceObject->GetToolType() && ItemGeneratorObject) {
 		ItemGeneratorObject->Execute_Generate(ResourceObject->_getUObject(), this);
 		AttackedCharactersSet.Add(OtherActor->GetName());
@@ -678,6 +677,12 @@ void AProjectUMCharacter::HandleDropItemServer_Implementation(int32 ItemId)
 
 void AProjectUMCharacter::SpawnItems_Implementation() {
 	for (auto& Item : Inventory->DefaultItems) {
+		int rand = FMath::RandRange(0, 4);
+		if (rand == 0) Item->ItemRarity = EProjectUMItemRarityEnum::COMMON;
+		if (rand == 1) Item->ItemRarity = EProjectUMItemRarityEnum::UNCOMMON;
+		if (rand == 2) Item->ItemRarity = EProjectUMItemRarityEnum::RARE;
+		if (rand == 3) Item->ItemRarity = EProjectUMItemRarityEnum::EPIC;
+		if (rand == 4) Item->ItemRarity = EProjectUMItemRarityEnum::LEGENDARY;
 		Inventory->AddItem(Item);
 	}
 	BroadcastInventory();
@@ -743,8 +748,7 @@ void AProjectUMCharacter::StopInteracting() {
 void AProjectUMCharacter::HandleInteraction_Implementation() {
 	if (!InteractableObjects.IsEmpty()) {
 		for (auto& Element : InteractableObjects) {
-			FString msg2 = "HANDLE INTERACTING ON " + Element->_getUObject()->GetName();
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, msg2);
+
 			 IInteractableObjectInterface::Execute_Interact(Element->_getUObject(), this);
 			return;
 		}
@@ -865,4 +869,13 @@ void AProjectUMCharacter::HandleLootingItem_Implementation(int32 ItemId)
 
 	BroadcastInventory();
 	BroadcastNpcLoot(LootingInventory->GetAllInventoryItems());
+}
+
+void AProjectUMCharacter::Disconnect() {
+	DisconnectClient();
+}
+
+void AProjectUMCharacter::DisconnectClient_Implementation() {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Loading Map");
+	UGameplayStatics::OpenLevel((UObject*)GetGameInstance(), FName(TEXT("MainMenu")));
 }
