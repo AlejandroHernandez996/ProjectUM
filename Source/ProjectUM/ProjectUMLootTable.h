@@ -26,6 +26,8 @@ protected:
 
 	int MinLoot;
 
+	bool bGeneratedLoot;
+
 	virtual void BeginPlay() override;
 
 	TArray<class UProjectUMItem*> Loot;

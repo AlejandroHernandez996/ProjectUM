@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InteractableObjectInterface.h"
+#include "NpcState.h"
 #include "ProjectUmNpc.generated.h"
 
 UCLASS()
@@ -47,12 +48,30 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 		class UProjectUMLootTable* LootTable;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
+		class UPawnSensingComponent* PawnSensor;
+
 	UPROPERTY(EditAnywhere, Category = "Effects")
 		class UParticleSystem* ExplosionEffect;
 
 	/** The player's maximum health. This is the highest value of their health can be. This value is a value of the player's health, which starts at when spawned.*/
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
 		float MaxHealth;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+		float LeashRange;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+		FVector SpawnLocation;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+		APawn* FocusPawn;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+		ENpcState State;
+
+	UFUNCTION()
+		void OnSeePawn(APawn* OtherPawn);
 
 	/** The player's current health. When reduced to 0, they are considered dead.*/
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentHealth)
@@ -70,4 +89,46 @@ protected:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	FTimerHandle AttackingTimer;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Attack")
+		float AttackRate;
+
+	bool bIsAttacking;
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void StartAttack();
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void StopAttack();
+
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		void HandleAttack();
+
+	UFUNCTION()
+		void OnAttackHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	UFUNCTION()
+		void OnAttackOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+		void OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+		class USphereComponent* AttackHitbox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Attack", meta = (AllowPrivateAccess = "true"))
+		float AttackDamage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+		class UAnimMontage* MeleeAttackMontage;
+
+	UFUNCTION(NetMulticast, Reliable)
+		void PlayProjectUMCharacterAnimMontage(UAnimMontage* AnimMontage);
+
+	void PlayProjectUMCharacterAnimMontage_Implementation(UAnimMontage* AnimMontage);
+
+	UPROPERTY()
+		TSet<FString> AttackedCharactersSet;
 };
