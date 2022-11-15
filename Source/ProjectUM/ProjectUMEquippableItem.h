@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "ProjectUMItem.h"
 #include "EquippableSlotsEnum.h"
+#include "ToolTypeEnum.h"
 #include "ProjectUMEquipment.h"
 #include "ProjectUMEquippableItem.generated.h"
 
@@ -19,6 +20,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Parameters")
 		TSubclassOf<AProjectUMEquipment> EquipmentClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		EToolTypeEnum ToolType = EToolTypeEnum::NONE;
 
 	virtual void Use(class AProjectUMCharacter* CharacterUser) override;
 };

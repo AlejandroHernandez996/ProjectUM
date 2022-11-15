@@ -24,6 +24,7 @@ bool UProjectUMInventoryComponent::ContainsItem(UProjectUMItem* StackableItem) {
 
 void UProjectUMInventoryComponent::AddItem(UProjectUMItem* Item)
 {
+	if (!Item) return;
 	if (Item->bIsStackable && ContainsItem(Item)) {
 		AddStackableItem(Item, Item->StackSize);
 		return;

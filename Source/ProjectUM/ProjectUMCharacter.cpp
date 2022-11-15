@@ -22,6 +22,8 @@
 #include "ProjectUmNpc.h"
 #include "ProjectUMCharacterStatsStruct.h"
 #include "ProjectUMLootableProp.h"
+#include "ProjectUMItemGenerator.h"
+#include "ProjectUMResource.h"
 #include "ProjectUMInventoryComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -537,7 +539,21 @@ void AProjectUMCharacter::OnAttackHit(UPrimitiveComponent* HitComponent, AActor*
 
 void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor->GetName() != this->GetName() && !AttackedCharactersSet.Contains(OtherActor->GetName()))
+	if(AttackedCharactersSet.Contains(OtherActor->GetName())) return;
+
+	UProjectUMEquippableItem* HandItem = Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND);
+	AProjectUMResource* ResourceObject = Cast<AProjectUMResource>(OtherActor);
+	IProjectUMItemGenerator* ItemGeneratorObject = Cast<IProjectUMItemGenerator>(OtherActor);
+	if (ResourceObject) {
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, HandItem->GetName() + " " + ResourceObject->GetName());
+	}
+	if (HandItem && ResourceObject && HandItem->ToolType == ResourceObject->GetToolType() && ItemGeneratorObject) {
+		ItemGeneratorObject->Execute_Generate(ResourceObject->_getUObject(), this);
+		AttackedCharactersSet.Add(OtherActor->GetName());
+		return;
+	}
+
+	if (OtherActor->GetName() != this->GetName())
 	{
 		if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)) {
 			FString msg = "HAND ATTACK";
