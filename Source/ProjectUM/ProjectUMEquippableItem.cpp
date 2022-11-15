@@ -7,7 +7,13 @@
 #include "ProjectUMInventoryComponent.h"
 
 void UProjectUMEquippableItem::Use(class AProjectUMCharacter* CharacterUser) {
-	if (!CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot)) {
+
+	if (!CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot) || CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot)->ItemId != ItemId) {
+		UProjectUMEquippableItem* EquippedItem = CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot);
+		if (EquippedItem) {
+			CharacterUser->DeAttachEquipment(EquipSlot);
+			CharacterUser->GetInventory()->UnEquipItem(EquippedItem, EquipSlot);
+		}
 		CharacterUser->GetInventory()->EquipItem(this, EquipSlot);
 		CharacterUser->AttachEquipment(EquipmentClass, EquipSlot);
 	}

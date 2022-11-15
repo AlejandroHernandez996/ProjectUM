@@ -566,13 +566,11 @@ void AProjectUMCharacter::OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComp
 
 void AProjectUMCharacter::StartEquipping(EEquippableSlotsEnum EquipSlot)
 {
-	if (!bIsEquipping)
-	{
+
 		bIsEquipping = true;
 		UWorld* World = GetWorld();
 		World->GetTimerManager().SetTimer(EquippingTimer, this, &AProjectUMCharacter::StopEquipping, EquipRate, false);
 		HandleEquip(EquipSlot);
-	}
 }
 
 void AProjectUMCharacter::StopEquipping()

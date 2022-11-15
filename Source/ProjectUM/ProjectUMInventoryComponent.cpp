@@ -143,11 +143,13 @@ void UProjectUMInventoryComponent::UpdateInventoryToLootingCharacters() {
 TArray<FItemStruct> UProjectUMInventoryComponent::GetAllInventoryItems() {
 	TArray<FItemStruct> InventoryItems = TArray<FItemStruct>();
 	for (auto& Item : Items) {
-		FItemStruct ItemStruct;
-		ItemStruct._bIsStackable = Item->bIsStackable;
-		ItemStruct._ItemId = Item->ItemId;
-		ItemStruct._StackSize = Item->StackSize;
-		InventoryItems.Add(ItemStruct);
+		if (Item) {
+			FItemStruct ItemStruct;
+			ItemStruct._bIsStackable = Item->bIsStackable;
+			ItemStruct._ItemId = Item->ItemId;
+			ItemStruct._StackSize = Item->StackSize;
+			InventoryItems.Add(ItemStruct);
+		}
 	}
 	return InventoryItems;
 }
@@ -158,12 +160,14 @@ TArray<FItemStruct> UProjectUMInventoryComponent::GetAllEquippedItems() {
 
 	TArray<FItemStruct> EquippedItemStructs = TArray<FItemStruct>();
 	for (auto& Item : EquippedItems) {
-		FItemStruct ItemStruct;
-		ItemStruct._bIsStackable = Item->bIsStackable;
-		ItemStruct._ItemId = Item->ItemId;
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, "Item Id:" + FString::FromInt(ItemStruct._ItemId));
-		ItemStruct._StackSize = Item->StackSize;
-		EquippedItemStructs.Add(ItemStruct);
+		if (Item) {
+			FItemStruct ItemStruct;
+			ItemStruct._bIsStackable = Item->bIsStackable;
+			ItemStruct._ItemId = Item->ItemId;
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, "Item Id:" + FString::FromInt(ItemStruct._ItemId));
+			ItemStruct._StackSize = Item->StackSize;
+			EquippedItemStructs.Add(ItemStruct);
+		}
 	}
 	return EquippedItemStructs;
 }
