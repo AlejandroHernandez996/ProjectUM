@@ -60,9 +60,29 @@ public:
 
 	virtual void Use(class AProjectUMCharacter* CharacterUser);
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		bool bIsStackable;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		int32 StackSize;
+
 public:
 	UFUNCTION()
 		float GetStat(ECharacterStatEnum Stat) {
 			return Stats.FindRef(Stat);
 		};
+};
+
+USTRUCT(BlueprintType)
+struct FItemStruct
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		int32 _ItemId;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		int32 _StackSize;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		bool _bIsStackable;
 };

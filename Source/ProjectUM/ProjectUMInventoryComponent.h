@@ -22,11 +22,19 @@ public:
 	UProjectUMInventoryComponent();
 
 	UFUNCTION()
-	void AddItem(class UProjectUMItem* Item);
+		void AddItem(class UProjectUMItem* Item);
 	
+	UFUNCTION()
+		void AddStackableItem(class UProjectUMItem* StackableItem, int Amount);
 
 	UFUNCTION()
-	void RemoveItem(class UProjectUMItem* Item);
+		bool ContainsItem(class UProjectUMItem* Item);
+
+	UFUNCTION()
+		void RemoveItem(class UProjectUMItem* Item);
+
+	UFUNCTION()
+		void RemoveStackableItem(class UProjectUMItem* StackableItem, int Amount);
 
 	UFUNCTION()
 		void EquipItem(class UProjectUMEquippableItem* Item, EEquippableSlotsEnum EquipSlot);
@@ -59,7 +67,10 @@ public:
 		void UpdateInventoryToLootingCharacters();
 
 	UFUNCTION()
-		TArray<int32> GetAllInventoryItemIds();
+		TArray<FItemStruct> GetAllInventoryItems();
+
+	UFUNCTION()
+		TArray<FItemStruct> GetAllEquippedItems();
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 		UProjectUMEquippableItem* GetEquipmentItem(EEquippableSlotsEnum EquipSlot) { return EquipmentMap.FindRef(EquipSlot); }

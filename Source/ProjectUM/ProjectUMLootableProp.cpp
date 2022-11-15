@@ -36,7 +36,7 @@ void AProjectUMLootableProp::Interact_Implementation(AProjectUMCharacter* Intera
 	Inventory->LootingCharacters.Add(Interactor);
 	Interactor->SetLootingInventory(Inventory);
 	Interactor->OpenLoot();
-	Interactor->BroadcastNpcLoot(Inventory->GetAllInventoryItemIds());
+	Interactor->BroadcastNpcLoot(Inventory->GetAllInventoryItems());
 }
 
 // Called when the game starts or when spawned

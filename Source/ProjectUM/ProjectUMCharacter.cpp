@@ -511,6 +511,7 @@ void AProjectUMCharacter::StopAttack()
 	else {
 		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
 	}
+	AttackedCharactersSet.Reset();
 }
 
 void AProjectUMCharacter::HandleAttack_Implementation()
@@ -743,7 +744,7 @@ void AProjectUMCharacter::Interact_Implementation(AProjectUMCharacter* Interacto
 	Inventory->LootingCharacters.Add(Interactor);
 	Interactor->SetLootingInventory(Inventory);
 	Interactor->OpenLoot();
-	Interactor->BroadcastNpcLoot(Inventory->GetAllInventoryItemIds());
+	Interactor->BroadcastNpcLoot(Inventory->GetAllInventoryItems());
 }
 
 void AProjectUMCharacter::OnInteractOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -789,8 +790,8 @@ void AProjectUMCharacter::AddItemToInventory_Implementation(UProjectUMItem* Item
 	BroadcastInventory();
 }
 
-void AProjectUMCharacter::BroadcastNpcLoot_Implementation(const TArray<int32>& ItemIds) {
-	OnNpcCorpseInteracted.Broadcast(ItemIds);
+void AProjectUMCharacter::BroadcastNpcLoot_Implementation(const TArray<FItemStruct>& Items) {
+	OnNpcCorpseInteracted.Broadcast(Items);
 }
 
 void AProjectUMCharacter::OpenLoot_Implementation() {
@@ -805,15 +806,7 @@ void AProjectUMCharacter::CloseLoot_Implementation() {
 
 void AProjectUMCharacter::BroadcastInventory_Implementation() {
 
-	TArray<UProjectUMEquippableItem*> EquippedItems;
-	Inventory->EquipmentMap.GenerateValueArray(EquippedItems);
-	TArray<int32> EquippedItemIds = TArray<int32>();
-	for (auto& Item : EquippedItems){
-		if (Item) {
-			EquippedItemIds.Add(Item->ItemId);
-		}
-	}
-	BroadcastInventoryToClient(Inventory->GetAllInventoryItemIds(), EquippedItemIds);
+	BroadcastInventoryToClient(Inventory->GetAllInventoryItems(), Inventory->GetAllEquippedItems());
 }
 
 void AProjectUMCharacter::OpenInventory() {
@@ -822,8 +815,8 @@ void AProjectUMCharacter::OpenInventory() {
 	OnInventoryOpen.Broadcast();
 }
 
-void AProjectUMCharacter::BroadcastInventoryToClient_Implementation(const TArray<int32>& InventoryItemIds, const TArray<int32>& EquippedItemIds) {
-	OnInventoryOpenDisplayItems.Broadcast(InventoryItemIds, EquippedItemIds);
+void AProjectUMCharacter::BroadcastInventoryToClient_Implementation(const TArray<FItemStruct>& InventoryItems, const TArray<FItemStruct>& EquippedItems) {
+	OnInventoryOpenDisplayItems.Broadcast(InventoryItems, EquippedItems);
 }
 
 void AProjectUMCharacter::StartLootingItem(int32 ItemId)
@@ -857,5 +850,5 @@ void AProjectUMCharacter::HandleLootingItem_Implementation(int32 ItemId)
 	LootingInventory->RemoveItem(LootedItem);
 
 	BroadcastInventory();
-	BroadcastNpcLoot(LootingInventory->GetAllInventoryItemIds());
+	BroadcastNpcLoot(LootingInventory->GetAllInventoryItems());
 }

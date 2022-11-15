@@ -6,12 +6,13 @@
 #include "GameFramework/Character.h"
 #include "InteractableObjectInterface.h"
 #include "CharacterStatEnum.h"
+#include "ProjectUMInventoryComponent.h"
 #include "ProjectUMCharacter.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNpcCorpseInteracted, const TArray<int32>&, ItemIds);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNpcCorpseInteracted, const TArray<FItemStruct>&, _Items);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNpcCorpseInteractedOpenLootWidget);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExitLootRange);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventoryOpenDisplayItems, const TArray<int32>&, InventoryItemIds, const TArray<int32>&, EquippedItemsIds);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventoryOpenDisplayItems, const TArray<FItemStruct>&, _InventoryItems, const TArray<FItemStruct>&, _EquippedItems);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryOpen);
 
 UCLASS(config=Game)
@@ -391,9 +392,9 @@ protected:
 
 public:
 	UFUNCTION(Client, Reliable, Category = "Interaction")
-		void BroadcastNpcLoot(const TArray<int32>& ItemIds);
+		void BroadcastNpcLoot(const TArray<FItemStruct>& LootItems);
 
-	void BroadcastNpcLoot_Implementation(const TArray<int32>& ItemIds);
+	void BroadcastNpcLoot_Implementation(const TArray<FItemStruct>& LootItems);
 
 	UFUNCTION(Client, Reliable, Category = "Interaction")
 		void OpenLoot();
@@ -411,9 +412,9 @@ public:
 	void BroadcastInventory_Implementation();
 
 	UFUNCTION(Client, Reliable, Category = "Interaction")
-		void BroadcastInventoryToClient(const TArray<int32>& InventoryItemIds, const TArray<int32>& EquippedItemIds);
+		void BroadcastInventoryToClient(const TArray<FItemStruct>& InventoryItems, const TArray<FItemStruct>& EquippedItems);
 
-	void BroadcastInventoryToClient_Implementation(const TArray<int32>& InventoryItemIds, const TArray<int32>& EquippedItemIds);
+	void BroadcastInventoryToClient_Implementation(const TArray<FItemStruct>& InventoryItems, const TArray<FItemStruct>& EquippedItems);
 
 	void OpenInventory();
 

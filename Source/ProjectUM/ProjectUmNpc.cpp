@@ -165,7 +165,7 @@ void AProjectUmNpc::Interact_Implementation(AProjectUMCharacter* Interactor) {
 	Inventory->LootingCharacters.Add(Interactor);
 	Interactor->SetLootingInventory(Inventory);
 	Interactor->OpenLoot();
-	Interactor->BroadcastNpcLoot(Inventory->GetAllInventoryItemIds());
+	Interactor->BroadcastNpcLoot(Inventory->GetAllInventoryItems());
 
 }
 
