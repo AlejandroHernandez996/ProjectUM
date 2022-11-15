@@ -131,4 +131,6 @@ protected:
 
 	UPROPERTY()
 		TSet<FString> AttackedCharactersSet;
+
+	int LastTick;
 };

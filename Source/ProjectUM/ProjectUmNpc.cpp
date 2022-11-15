@@ -65,6 +65,7 @@ AProjectUmNpc::AProjectUmNpc()
 	AttackRate = 1.0f;
 	bIsAttacking = false;
 	AttackDamage = 10.0f;
+	LastTick = 0;
 }
 
 // Called when the game starts or when spawned
