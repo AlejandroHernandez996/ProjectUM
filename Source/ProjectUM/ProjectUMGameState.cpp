@@ -19,7 +19,7 @@ void AProjectUMGameState::BeginPlay() {
 UProjectUMItem* AProjectUMGameState::GetItemById(int32  ItemId){
 
 	for (auto& Item : AssetCache->ItemCache) {
-		if (Item->ItemId == ItemId) {
+		if (Item && Item->ItemId == ItemId) {
 			return Item;
 		}
 	}

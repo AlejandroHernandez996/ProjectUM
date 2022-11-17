@@ -8,7 +8,7 @@
 
 void UProjectUMEquippableItem::Use(class AProjectUMCharacter* CharacterUser) {
 
-	if (!CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot) || CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot)->ItemId != ItemId) {
+	if (!CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot) || CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot) != this) {
 		UProjectUMEquippableItem* EquippedItem = CharacterUser->GetInventory()->EquipmentMap.FindRef(EquipSlot);
 		if (EquippedItem) {
 			CharacterUser->DeAttachEquipment(EquipSlot);
