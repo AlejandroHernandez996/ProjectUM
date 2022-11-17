@@ -7,6 +7,7 @@
 #include "InteractableObjectInterface.h"
 #include "CharacterStatEnum.h"
 #include "ProjectUMInventoryComponent.h"
+#include "Http.h"
 #include "ProjectUMCharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNpcCorpseInteracted, const TArray<FItemStruct>&, _Items);
@@ -41,6 +42,8 @@ class AProjectUMCharacter : public ACharacter, public IInteractableObjectInterfa
 	TMap<ECharacterStatEnum, float> BaseStatsMap;
 
 	void InitStats();
+
+	void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 
 public:
 	UFUNCTION(BlueprintPure)

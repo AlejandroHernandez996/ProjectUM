@@ -88,3 +88,24 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 		float _Wisdom;
 };
+
+USTRUCT()
+struct FItemJsonStruct
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+		int32 item_id;
+	UPROPERTY()
+		FString rarity;
+	UPROPERTY()
+		int32 collection_index;
+	UPROPERTY()
+		FString collection_type;
+	UPROPERTY()
+		bool is_stackable;
+	UPROPERTY()
+		int32 quantity;
+	UPROPERTY()
+		TMap<FString, float> stats;
+};

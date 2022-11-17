@@ -26,6 +26,8 @@
 #include "ProjectUMResource.h"
 #include "Engine/GameInstance.h"
 #include "ProjectUMInventoryComponent.h"
+#include "Json.h"
+#include "JsonObjectConverter.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AProjectUMCharacter
@@ -183,6 +185,45 @@ void AProjectUMCharacter::BeginPlay() {
 	const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
 	FistComponent->AttachToComponent(GetMesh(), AttachmentRules, "hand_l");
 	FistComponent->SetHiddenInGame(false);
+
+	TSharedRef<FJsonObject> RequestObj = MakeShared<FJsonObject>();
+	RequestObj->SetStringField("title", "foo");
+
+	FString RequestBody;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
+	FJsonSerializer::Serialize(RequestObj, Writer);
+
+
+	FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
+	Request->OnProcessRequestComplete().BindUObject(this, &AProjectUMCharacter::OnResponseReceived);
+	Request->SetURL("https://eqsntvit1c.execute-api.us-east-2.amazonaws.com/items/2");
+	Request->SetVerb("GET");
+	Request->ProcessRequest();
+}
+
+void AProjectUMCharacter::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+{
+	TSharedPtr<FJsonObject> ResponseObj;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	FJsonSerializer::Deserialize(Reader, ResponseObj);
+
+	FString ITEM = FString(TEXT("Item"));
+	FString ITEMS = FString(TEXT("items"));
+
+	TArray<FItemJsonStruct> ParsedJsonItems;
+	FJsonObject* JsonItem = ResponseObj.Get()->GetObjectField(ITEM).Get();
+	TArray<TSharedPtr<FJsonValue>> JsonItems = JsonItem->GetArrayField(ITEMS);
+
+	FJsonObjectConverter::JsonArrayToUStruct(JsonItems, & ParsedJsonItems);
+	
+	for (auto& ParsedJsonItem : ParsedJsonItems) {
+		UProjectUMItem* NewItem = NewObject<UProjectUMItem>();
+		NewItem->ItemId =  ParsedJsonItem.item_id;
+		Inventory->AddItem(NewItem);
+	}
+	
+
+	
 }
 
 //////////////////////////////////////////////////////////////////////////
