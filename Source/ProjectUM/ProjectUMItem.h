@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "ProjectUMItemRarityEnum.h"
+#include "CharacterStatEnum.h"
 #include "ProjectUMItem.generated.h"
 
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
@@ -59,6 +60,68 @@ public:
 		float GetStat(ECharacterStatEnum Stat) {
 			return Stats.FindRef(Stat);
 		};
+	UFUNCTION()
+		static ECharacterStatEnum CharacterStatStringToEnum(FString StatString) {
+		if (StatString.Compare(TEXT("Str")) == 0) {
+			return ECharacterStatEnum::STRENGTH;
+		}
+		if (StatString.Compare(TEXT("Int")) == 0) {
+			return ECharacterStatEnum::INTELLECT;
+		}
+		if (StatString.Compare(TEXT("Wis")) == 0) {
+			return ECharacterStatEnum::WISDOM;
+		}
+		if (StatString.Compare(TEXT("Agi")) == 0) {
+			return ECharacterStatEnum::AGILITY;
+		}
+		if (StatString.Compare(TEXT("Health")) == 0) {
+			return ECharacterStatEnum::HEALTH;
+		}
+		if (StatString.Compare(TEXT("Mana")) == 0) {
+			return ECharacterStatEnum::MANA;
+		}
+		return ECharacterStatEnum::HEALTH;
+	}
+
+	UFUNCTION()
+		static EProjectUMItemRarityEnum RarityStringToEnum(FString RarityString) {
+		if (RarityString.Compare(TEXT("COMMON")) == 0) {
+			return EProjectUMItemRarityEnum::COMMON;
+		}
+		if (RarityString.Compare(TEXT("UNCOMMON")) == 0) {
+			return EProjectUMItemRarityEnum::UNCOMMON;
+		}
+		if (RarityString.Compare(TEXT("RARE")) == 0) {
+			return EProjectUMItemRarityEnum::RARE;
+		}
+		if (RarityString.Compare(TEXT("EPIC")) == 0) {
+			return EProjectUMItemRarityEnum::EPIC;
+		}
+		if (RarityString.Compare(TEXT("LEGENDARY")) == 0) {
+			return EProjectUMItemRarityEnum::LEGENDARY;
+		}
+		return EProjectUMItemRarityEnum::COMMON;
+	}
+
+	UFUNCTION()
+		static FString RarityEnumToString(EProjectUMItemRarityEnum RarityEnum) {
+		if (RarityEnum == EProjectUMItemRarityEnum::COMMON) {
+			return FString(TEXT("COMMON"));
+		}
+		if (RarityEnum == EProjectUMItemRarityEnum::UNCOMMON) {
+			return FString(TEXT("UNCOMMON"));
+		}
+		if (RarityEnum == EProjectUMItemRarityEnum::RARE) {
+			return FString(TEXT("RARE"));
+		}
+		if (RarityEnum == EProjectUMItemRarityEnum::EPIC) {
+			return FString(TEXT("EPIC"));
+		}
+		if (RarityEnum == EProjectUMItemRarityEnum::LEGENDARY) {
+			return FString(TEXT("LEGENDARY"));
+		}
+		return "COMMON";
+	}
 };
 
 USTRUCT(BlueprintType)

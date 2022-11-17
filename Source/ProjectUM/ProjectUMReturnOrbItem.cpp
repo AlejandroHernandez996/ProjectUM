@@ -4,6 +4,7 @@
 #include "Json.h"
 #include "ProjectUMInventoryComponent.h"
 #include "ProjectUMCharacter.h"
+#include "ProjectUMItem.h"
 #include "JsonObjectConverter.h"
 
 void UProjectUMReturnOrbItem::Use(AProjectUMCharacter* CharacterUser)
@@ -27,6 +28,7 @@ void UProjectUMReturnOrbItem::Use(AProjectUMCharacter* CharacterUser)
 		JsonItemStruct.item_id = Item->ItemId;
 		JsonItemStruct.collection_type = FString(TEXT("INVENTORY"));
 		JsonItemStruct.collection_index = Index;
+		JsonItemStruct.rarity = UProjectUMItem::RarityEnumToString(Item->ItemRarity);
 		JsonItemStruct.stats.Add("Str", Item->Stats.FindOrAdd(ECharacterStatEnum::STRENGTH));
 		JsonItemStruct.stats.Add("Int", Item->Stats.FindOrAdd(ECharacterStatEnum::INTELLECT));
 		JsonItemStruct.stats.Add("Agi", Item->Stats.FindOrAdd(ECharacterStatEnum::AGILITY));

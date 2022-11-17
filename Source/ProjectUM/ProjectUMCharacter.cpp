@@ -217,6 +217,11 @@ void AProjectUMCharacter::OnResponseReceived(FHttpRequestPtr Request, FHttpRespo
 		for (auto& Item : AssetCache->ItemCache) {
 			if (Item && Item->ItemId == ParsedJsonItem.item_id) {
 				UProjectUMItem* NewItem = DuplicateObject(Item, nullptr);
+				NewItem->ItemRarity = UProjectUMItem::RarityStringToEnum(ParsedJsonItem.rarity);
+				for (auto& kvp : ParsedJsonItem.stats) {
+					NewItem->Stats.Add(UProjectUMItem::CharacterStatStringToEnum(kvp.Key), kvp.Value);
+				}
+				NewItem->StackSize = ParsedJsonItem.quantity;
 				Inventory->AddItem(NewItem);
 				break;
 			}
@@ -566,6 +571,8 @@ void AProjectUMCharacter::HandleAttack_Implementation()
 	else {
 		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetHitboxComponent()->SetCollisionProfileName("Weapon");
 	}
+	UWorld* World = GetWorld();
+	World->GetTimerManager().SetTimer(AttackingTimer, this, &AProjectUMCharacter::StopAttack, AttackRate, false);
 	PlayProjectUMCharacterAnimMontage(MeleeAttackMontage);
 }
 
