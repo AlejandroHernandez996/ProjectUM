@@ -14,6 +14,8 @@ class PROJECTUM_API AProjectUMGameState : public AGameStateBase
 {
 	GENERATED_BODY()
 
+		virtual void BeginPlay();
+
 public:
 	AProjectUMGameState();
 
@@ -21,5 +23,5 @@ public:
 		class UProjectUMAssetCache* AssetCache;
 
 	UFUNCTION(BlueprintCallable, Category = "Game State")
-		class UProjectUMItem* GetItemById(int32  ItemId);
+		class UProjectUMItem* GetItemById(int32 ItemId);
 };

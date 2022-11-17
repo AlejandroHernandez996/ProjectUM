@@ -188,19 +188,13 @@ void AProjectUMCharacter::BeginPlay() {
 	FistComponent->AttachToComponent(GetMesh(), AttachmentRules, "hand_l");
 	FistComponent->SetHiddenInGame(false);
 
-	TSharedRef<FJsonObject> RequestObj = MakeShared<FJsonObject>();
-	RequestObj->SetStringField("title", "foo");
-
-	FString RequestBody;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
-	FJsonSerializer::Serialize(RequestObj, Writer);
-
-
-	FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
-	Request->OnProcessRequestComplete().BindUObject(this, &AProjectUMCharacter::OnResponseReceived);
-	Request->SetURL("https://eqsntvit1c.execute-api.us-east-2.amazonaws.com/items/2");
-	Request->SetVerb("GET");
-	Request->ProcessRequest();
+	if (GetLocalRole() == ROLE_Authority) {
+		FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
+		Request->OnProcessRequestComplete().BindUObject(this, &AProjectUMCharacter::OnResponseReceived);
+		Request->SetURL("https://eqsntvit1c.execute-api.us-east-2.amazonaws.com/items/1");
+		Request->SetVerb("GET");
+		Request->ProcessRequest();
+	}
 }
 
 void AProjectUMCharacter::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
@@ -218,12 +212,16 @@ void AProjectUMCharacter::OnResponseReceived(FHttpRequestPtr Request, FHttpRespo
 
 	FJsonObjectConverter::JsonArrayToUStruct(JsonItems, & ParsedJsonItems);
 	
+	UProjectUMAssetCache* AssetCache = GetWorld()->GetGameState<AProjectUMGameState>()->AssetCache;
 	for (auto& ParsedJsonItem : ParsedJsonItems) {
-		UProjectUMItem* NewItem = DuplicateObject(GetWorld()->GetGameState<AProjectUMGameState>()->AssetCache->ItemCacheMap.FindRef(ParsedJsonItem.item_id), nullptr);
-		Inventory->AddItem(NewItem);
+		for (auto& Item : AssetCache->ItemCache) {
+			if (Item && Item->ItemId == ParsedJsonItem.item_id) {
+				UProjectUMItem* NewItem = DuplicateObject(Item, nullptr);
+				Inventory->AddItem(NewItem);
+				break;
+			}
+		}
 	}
-	
-
 	
 }
 

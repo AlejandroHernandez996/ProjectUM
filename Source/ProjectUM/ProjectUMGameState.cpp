@@ -8,9 +8,12 @@
 
 AProjectUMGameState::AProjectUMGameState()
 {
-	for (auto& Item : AssetCache->ItemCache) {
-		AssetCache->ItemCacheMap.Add(Item->ItemId, Item);
-	}
+	
+}
+
+void AProjectUMGameState::BeginPlay() {
+
+	Super::BeginPlay();
 }
 
 UProjectUMItem* AProjectUMGameState::GetItemById(int32  ItemId){

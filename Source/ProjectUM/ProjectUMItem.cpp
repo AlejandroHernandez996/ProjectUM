@@ -2,6 +2,7 @@
 
 
 #include "ProjectUMItem.h"
+#include "CharacterStatEnum.h"
 
 UProjectUMItem::UProjectUMItem()
 {

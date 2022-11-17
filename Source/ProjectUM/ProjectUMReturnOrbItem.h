@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Http.h"
 #include "ProjectUMItem.h"
 #include "ProjectUMReturnOrbItem.generated.h"
 
@@ -17,4 +18,6 @@ class PROJECTUM_API UProjectUMReturnOrbItem : public UProjectUMItem
 public:
 	virtual void Use(class AProjectUMCharacter* CharacterUser) override;
 
+private:
+	void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 };

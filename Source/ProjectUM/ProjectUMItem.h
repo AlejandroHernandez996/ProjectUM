@@ -109,3 +109,14 @@ struct FItemJsonStruct
 	UPROPERTY()
 		TMap<FString, float> stats;
 };
+
+USTRUCT()
+struct FPlayerCollectionJsonStruct
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+		FString id;
+	UPROPERTY()
+		TArray<FItemJsonStruct> items;
+};
