@@ -17,4 +17,7 @@ class PROJECTUM_API UProjectUMAssetCache : public UDataAsset
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Cache")
 		TSet<class UProjectUMItem*> ItemCache;
+
+		TMap<int32, class UProjectUMItem*> ItemCacheMap;
+
 };

@@ -28,6 +28,8 @@
 #include "ProjectUMInventoryComponent.h"
 #include "Json.h"
 #include "JsonObjectConverter.h"
+#include "ProjectUMAssetCache.h"
+#include "ProjectUMGameState.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AProjectUMCharacter
@@ -217,8 +219,7 @@ void AProjectUMCharacter::OnResponseReceived(FHttpRequestPtr Request, FHttpRespo
 	FJsonObjectConverter::JsonArrayToUStruct(JsonItems, & ParsedJsonItems);
 	
 	for (auto& ParsedJsonItem : ParsedJsonItems) {
-		UProjectUMItem* NewItem = NewObject<UProjectUMItem>();
-		NewItem->ItemId =  ParsedJsonItem.item_id;
+		UProjectUMItem* NewItem = DuplicateObject(GetWorld()->GetGameState<AProjectUMGameState>()->AssetCache->ItemCacheMap.FindRef(ParsedJsonItem.item_id), nullptr);
 		Inventory->AddItem(NewItem);
 	}
 	

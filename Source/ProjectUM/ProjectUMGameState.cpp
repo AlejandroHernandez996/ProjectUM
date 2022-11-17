@@ -8,6 +8,9 @@
 
 AProjectUMGameState::AProjectUMGameState()
 {
+	for (auto& Item : AssetCache->ItemCache) {
+		AssetCache->ItemCacheMap.Add(Item->ItemId, Item);
+	}
 }
 
 UProjectUMItem* AProjectUMGameState::GetItemById(int32  ItemId){
