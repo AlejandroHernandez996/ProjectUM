@@ -21,6 +21,9 @@ public:
 	virtual class UWorld* GetWorld() const { return World; }
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Item")
+		FString ItemGuid;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Item")
 		int32 ItemId;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
@@ -164,22 +167,9 @@ struct FItemJsonStruct
 	UPROPERTY()
 		int32 collection_index;
 	UPROPERTY()
-		FString collection_type;
-	UPROPERTY()
 		bool is_stackable;
 	UPROPERTY()
 		int32 quantity;
 	UPROPERTY()
 		TMap<FString, float> stats;
-};
-
-USTRUCT()
-struct FPlayerCollectionJsonStruct
-{
-	GENERATED_USTRUCT_BODY()
-
-	UPROPERTY()
-		FString id;
-	UPROPERTY()
-		TArray<FItemJsonStruct> items;
 };

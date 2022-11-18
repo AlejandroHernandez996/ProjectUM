@@ -46,6 +46,10 @@ class AProjectUMCharacter : public ACharacter, public IInteractableObjectInterfa
 	void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 
 public:
+	UFUNCTION()
+		class UCameraComponent* GetFollowCamera() {
+			return FollowCamera;
+		}
 	UFUNCTION(BlueprintPure)
 		float GetCurrentStat(ECharacterStatEnum Stat) {
 		return CurrentStatsMap[Stat];

@@ -219,7 +219,7 @@ void AProjectUMCharacter::BeginPlay() {
 	if (GetLocalRole() == ROLE_Authority) {
 		FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
 		Request->OnProcessRequestComplete().BindUObject(this, &AProjectUMCharacter::OnResponseReceived);
-		Request->SetURL("https://eqsntvit1c.execute-api.us-east-2.amazonaws.com/items/1");
+		Request->SetURL("https://eqsntvit1c.execute-api.us-east-2.amazonaws.com/inventory/JANDRO");
 		Request->SetVerb("GET");
 		Request->ProcessRequest();
 	}
@@ -232,16 +232,12 @@ void AProjectUMCharacter::OnResponseReceived(FHttpRequestPtr Request, FHttpRespo
 	FJsonSerializer::Deserialize(Reader, ResponseObj);
 
 	FString ITEM = FString(TEXT("Item"));
-	FString ITEMS = FString(TEXT("items"));
 
-	TArray<FItemJsonStruct> ParsedJsonItems;
-	FJsonObject* JsonItem = ResponseObj.Get()->GetObjectField(ITEM).Get();
-	TArray<TSharedPtr<FJsonValue>> JsonItems = JsonItem->GetArrayField(ITEMS);
-
-	FJsonObjectConverter::JsonArrayToUStruct(JsonItems, & ParsedJsonItems);
+	FInventoryJsonStruct InventoryStruct;
+	FJsonObjectConverter::JsonObjectToUStruct(ResponseObj.Get()->GetObjectField(ITEM).ToSharedRef(), &InventoryStruct);
 	
 	UProjectUMAssetCache* AssetCache = GetWorld()->GetGameState<AProjectUMGameState>()->AssetCache;
-	for (auto& ParsedJsonItem : ParsedJsonItems) {
+	for (auto& ParsedJsonItem : InventoryStruct.items) {
 		for (auto& Item : AssetCache->ItemCache) {
 			if (Item && Item->ItemId == ParsedJsonItem.item_id) {
 				UProjectUMItem* NewItem = DuplicateObject(Item, nullptr);

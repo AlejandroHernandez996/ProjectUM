@@ -10,23 +10,20 @@
 void UProjectUMReturnOrbItem::Use(AProjectUMCharacter* CharacterUser)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "ORB");
-
 	FHttpRequestRef RequestDelete = FHttpModule::Get().CreateRequest();
-	RequestDelete->SetURL("https://eqsntvit1c.execute-api.us-east-2.amazonaws.com/items/1");
+	RequestDelete->SetURL("https://eqsntvit1c.execute-api.us-east-2.amazonaws.com/inventory/JANDRO");
 	RequestDelete->SetVerb("DELETE");
 	RequestDelete->ProcessRequest();
 
 	TArray<UProjectUMItem*> ItemsArray = CharacterUser->GetInventory()->Items;
-	FPlayerCollectionJsonStruct Record;
-	Record.id = FString("1");
 	TArray<FItemJsonStruct> Items;
 	int32 Index = 0;
+	FInventoryJsonStruct Inventory;
 	for (auto& Item : CharacterUser->GetInventory()->Items) {
 		FItemJsonStruct JsonItemStruct;
 		JsonItemStruct.is_stackable = Item->bIsStackable;
 		JsonItemStruct.quantity = Item->StackSize;
 		JsonItemStruct.item_id = Item->ItemId;
-		JsonItemStruct.collection_type = FString(TEXT("INVENTORY"));
 		JsonItemStruct.collection_index = Index;
 		JsonItemStruct.rarity = UProjectUMItem::RarityEnumToString(Item->ItemRarity);
 		JsonItemStruct.stats.Add("Str", Item->Stats.FindOrAdd(ECharacterStatEnum::STRENGTH));
@@ -38,20 +35,23 @@ void UProjectUMReturnOrbItem::Use(AProjectUMCharacter* CharacterUser)
 		Items.Add(JsonItemStruct);
 		Index++;
 	}
-	Record.items = Items;
 
+	Inventory.owning_player_id = TEXT("JANDRO");
+	Inventory.items = Items;
 	FString PutString;
-	FJsonObjectConverter::UStructToJsonObjectString(Record, PutString);
+	FJsonObjectConverter::UStructToJsonObjectString(Inventory, PutString);
 
 	FHttpRequestRef RequestPut = FHttpModule::Get().CreateRequest();
 	RequestPut->OnProcessRequestComplete().BindUObject(this, &UProjectUMReturnOrbItem::OnResponseReceived);
-	RequestPut->SetURL("https://eqsntvit1c.execute-api.us-east-2.amazonaws.com/items");
+	RequestPut->SetURL("https://eqsntvit1c.execute-api.us-east-2.amazonaws.com/inventory");
 	RequestPut->SetVerb("PUT");
 	RequestPut->SetHeader("Content-Type", "application/json");
 	RequestPut->SetContentAsString(PutString);
 	RequestPut->ProcessRequest();
 
 	UE_LOG(LogTemp, Display, TEXT("PUT %s"), *PutString);
+	
+	
 	//CharacterUser->Disconnect();
 }
 

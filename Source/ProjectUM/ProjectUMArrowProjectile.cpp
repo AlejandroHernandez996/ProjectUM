@@ -2,6 +2,7 @@
 
 
 #include "ProjectUMArrowProjectile.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 AProjectUMArrowProjectile::AProjectUMArrowProjectile() {
 	
@@ -15,4 +16,5 @@ AProjectUMArrowProjectile::AProjectUMArrowProjectile() {
 		StaticMesh->SetRelativeScale3D(FVector(0.05f, 0.05f, 0.05f));
 	}
 
+	ProjectileMovementComponent->ProjectileGravityScale = 1.0f;
 }

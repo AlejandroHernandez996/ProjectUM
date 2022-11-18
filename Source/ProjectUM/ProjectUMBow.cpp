@@ -2,6 +2,7 @@
 
 
 #include "ProjectUMBow.h"
+#include "ProjectUMCharacter.h"
 #include "ProjectUMArrowProjectile.h"
 #include "RenderCore.h"
 

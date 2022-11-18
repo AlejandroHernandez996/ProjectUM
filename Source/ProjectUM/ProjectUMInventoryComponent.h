@@ -97,3 +97,15 @@ public:
 	UFUNCTION()
 		FItemStruct CreateItemStruct(class UProjectUMItem* Item);
 };
+
+
+USTRUCT()
+struct FInventoryJsonStruct
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+		FString owning_player_id;
+	UPROPERTY()
+		TArray<FItemJsonStruct> items;
+};
