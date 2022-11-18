@@ -393,6 +393,17 @@ protected:
 
 	void HandleInteraction_Implementation();
 
+	UFUNCTION(Server, Reliable, Category = "Input")
+		void HoldPrimaryInput();
+
+		void HoldPrimaryInput_Implementation();
+
+	UFUNCTION(Server, Reliable, Category = "Input")
+		void ReleasePrimaryInput();
+
+		void ReleasePrimaryInput_Implementation();
+
+
 public:
 	UFUNCTION(Client, Reliable, Category = "Interaction")
 		void BroadcastNpcLoot(const TArray<FItemStruct>& LootItems);

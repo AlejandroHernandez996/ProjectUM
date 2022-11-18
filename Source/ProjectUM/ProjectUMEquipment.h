@@ -11,6 +11,7 @@ class PROJECTUM_API AProjectUMEquipment : public AActor
 	GENERATED_BODY()
 	
 public:	
+	AActor* OwningActor;
 	// Sets default values for this actor's properties
 	AProjectUMEquipment();
 

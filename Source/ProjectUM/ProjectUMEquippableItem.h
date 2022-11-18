@@ -7,6 +7,7 @@
 #include "EquippableSlotsEnum.h"
 #include "ToolTypeEnum.h"
 #include "ProjectUMEquipment.h"
+#include "ProjectUMWeaponType.h"
 #include "ProjectUMEquippableItem.generated.h"
 
 UCLASS()
@@ -23,6 +24,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 		EToolTypeEnum ToolType = EToolTypeEnum::NONE;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+		EProjectUMWeaponType WeaponType = EProjectUMWeaponType::NONE;
 
 	virtual void Use(class AProjectUMCharacter* CharacterUser) override;
 };

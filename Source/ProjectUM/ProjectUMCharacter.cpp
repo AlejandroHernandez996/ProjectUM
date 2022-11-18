@@ -23,6 +23,7 @@
 #include "ProjectUMCharacterStatsStruct.h"
 #include "ProjectUMLootableProp.h"
 #include "ProjectUMItemGenerator.h"
+#include "ChannableInterface.h"
 #include "ProjectUMResource.h"
 #include "Engine/GameInstance.h"
 #include "ProjectUMInventoryComponent.h"
@@ -30,6 +31,7 @@
 #include "JsonObjectConverter.h"
 #include "ProjectUMAssetCache.h"
 #include "ProjectUMGameState.h"
+#include "ProjectUMBow.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AProjectUMCharacter
@@ -177,8 +179,34 @@ void AProjectUMCharacter::InitStats() {
 void AProjectUMCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("LeftMouseButton")))
+	{
+		HoldPrimaryInput();
+	}
+
+	if (GetWorld()->GetFirstPlayerController()->WasInputKeyJustReleased(FKey("LeftMouseButton")))
+	{
+		ReleasePrimaryInput();
+	}
 }
 
+void AProjectUMCharacter::HoldPrimaryInput_Implementation() {
+	if (Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)
+		&& Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->WeaponType == EProjectUMWeaponType::BOW)
+	{
+		IChannableInterface* ChannableObject = Cast<IChannableInterface>(EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND));
+		ChannableObject->Execute_Channel(ChannableObject->_getUObject());
+	}
+}
+
+void AProjectUMCharacter::ReleasePrimaryInput_Implementation() {
+	if (Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)
+		&& Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->WeaponType == EProjectUMWeaponType::BOW)
+	{
+		IChannableInterface* ChannableObject = Cast<IChannableInterface>(EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND));
+		ChannableObject->Execute_Release(ChannableObject->_getUObject());
+	}
+}
 
 // Called after constructor
 void AProjectUMCharacter::BeginPlay() {
@@ -564,6 +592,12 @@ void AProjectUMCharacter::StopAttack()
 
 void AProjectUMCharacter::HandleAttack_Implementation()
 {
+	if (Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)
+		&& Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->WeaponType == EProjectUMWeaponType::BOW)
+	{
+		return;
+	}
+
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("ATTACK"));
 	if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)){
 		FistComponent->SetCollisionProfileName("Weapon");
@@ -645,16 +679,18 @@ void AProjectUMCharacter::HandleEquip(EEquippableSlotsEnum EquipSlot) {
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 
 		const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
-		EquippedItemMap.Add(EquipSlot, GetWorld()->SpawnActor<AProjectUMEquipment>(EquipmentClassMap.FindRef(EquipSlot)));
-		EquippedItemMap.FindRef(EquipSlot)->GetRootComponent()->SetupAttachment(RootComponent);
-		EquippedItemMap.FindRef(EquipSlot)->GetRootComponent()->AttachToComponent(GetMesh(), AttachmentRules, EquipSlotSkeletonMapping.FindRef(EquipSlot));
+		AProjectUMEquipment* EquipmentActor = GetWorld()->SpawnActor<AProjectUMEquipment>(EquipmentClassMap.FindRef(EquipSlot));
+		EquippedItemMap.Add(EquipSlot, EquipmentActor);
+		EquipmentActor->GetRootComponent()->SetupAttachment(RootComponent);
+		EquipmentActor->GetRootComponent()->AttachToComponent(GetMesh(), AttachmentRules, EquipSlotSkeletonMapping.FindRef(EquipSlot));
+		EquipmentActor->OwningActor = this;
 		if (EquipSlot == EEquippableSlotsEnum::HAND) {
-			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
-			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->SetNotifyRigidBodyCollision(false);
-			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->SetHiddenInGame(false);
-			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->OnComponentHit.AddDynamic(this, &AProjectUMCharacter::OnAttackHit);
-			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->OnComponentEndOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapEnd);
-			EquippedItemMap.FindRef(EquipSlot)->GetHitboxComponent()->OnComponentBeginOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapBegin);
+			EquipmentActor->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
+			EquipmentActor->GetHitboxComponent()->SetNotifyRigidBodyCollision(false);
+			EquipmentActor->GetHitboxComponent()->SetHiddenInGame(false);
+			EquipmentActor->GetHitboxComponent()->OnComponentHit.AddDynamic(this, &AProjectUMCharacter::OnAttackHit);
+			EquipmentActor->GetHitboxComponent()->OnComponentEndOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapEnd);
+			EquipmentActor->GetHitboxComponent()->OnComponentBeginOverlap.AddDynamic(this, &AProjectUMCharacter::OnAttackOverlapBegin);
 		}
 }
 
