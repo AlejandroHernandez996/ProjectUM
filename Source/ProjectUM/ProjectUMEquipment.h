@@ -10,21 +10,23 @@ class PROJECTUM_API AProjectUMEquipment : public AActor
 {
 	GENERATED_BODY()
 	
-public:	
-	AActor* OwningActor;
-	// Sets default values for this actor's properties
+
+public:
 	AProjectUMEquipment();
 
+	AActor* OwningActor;
 	UFUNCTION()
 		UStaticMeshComponent* GetHitboxComponent() { return MeshComponent; };
+
+	UFUNCTION(NetMulticast, Reliable)
+		void SetMesh(UStaticMesh* Mesh, FQuat Rot, FVector Loc, FVector Scale);
+
+	void SetMesh_Implemntation(UStaticMesh* Mesh, FQuat Rot, FVector Loc, FVector Scale);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Collisions, meta = (AllowPrivateAccess = "true"))
-		class USphereComponent* HitboxComponent;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Collisions, meta = (AllowPrivateAccess = "true"))
 		class UStaticMeshComponent* MeshComponent;
 
 };

@@ -74,9 +74,9 @@ AProjectUMCharacter::AProjectUMCharacter()
 	// instead of recompiling to adjust them
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.0f;
+	GetCharacterMovement()->MaxWalkSpeed = 750.0f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 500.0f;
+	GetCharacterMovement()->BrakingDecelerationWalking = 2000.0f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -191,6 +191,7 @@ void AProjectUMCharacter::Tick(float DeltaTime)
 	{
 		ReleasePrimaryInput();
 	}
+
 }
 
 void AProjectUMCharacter::HoldPrimaryInput_Implementation() {
@@ -605,7 +606,7 @@ void AProjectUMCharacter::HandleAttack_Implementation()
 	else {
 		AProjectUMEquipment* Weapon = EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND);
 		Weapon->GetHitboxComponent()->SetCollisionProfileName("Weapon");
-		UAnimMontage* WeaponAttackMontage = Cast<AProjectUMWeapon>(Weapon)->AttackMontage;
+		UAnimMontage* WeaponAttackMontage = Inventory->GetEquipmentItem(EEquippableSlotsEnum::HAND)->AttackMontage;
 		if (WeaponAttackMontage) {
 			AttackMontage = WeaponAttackMontage;
 		}
@@ -684,7 +685,9 @@ void AProjectUMCharacter::HandleEquip(EEquippableSlotsEnum EquipSlot) {
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
 
 		const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
+		UProjectUMEquippableItem* Item = Inventory->GetEquipmentItem(EquipSlot);
 		AProjectUMEquipment* EquipmentActor = GetWorld()->SpawnActor<AProjectUMEquipment>(EquipmentClassMap.FindRef(EquipSlot));
+		EquipmentActor->SetMesh(Item->PickupMesh, Item->BaseRotation, Item->BaseLocation, Item->BaseScale);
 		EquippedItemMap.Add(EquipSlot, EquipmentActor);
 		EquipmentActor->GetRootComponent()->AttachToComponent(GetMesh(), AttachmentRules, EquipSlotSkeletonMapping.FindRef(EquipSlot));
 		EquipmentActor->OwningActor = this;

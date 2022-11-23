@@ -59,6 +59,9 @@ public:
 		int32 StackSize;
 
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+		class UAnimMontage* AttackMontage;
+
 	UFUNCTION()
 		float GetStat(ECharacterStatEnum Stat) {
 			return Stats.FindRef(Stat);

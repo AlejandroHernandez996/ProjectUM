@@ -8,18 +8,6 @@
 // Sets default values
 AProjectUMWeapon::AProjectUMWeapon()
 {
-	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("Weapon");
-	MeshComponent->SetupAttachment(RootComponent);
-	MeshComponent->SetCollisionProfileName("NoCollision");
-	MeshComponent->SetHiddenInGame(false);
-	MeshComponent->SetNotifyRigidBodyCollision(false);
-
-	HitboxComponent = CreateDefaultSubobject<USphereComponent>("Hitbox");
-	HitboxComponent->SetupAttachment(MeshComponent);
-	HitboxComponent->SetCollisionProfileName("NoCollision");
-	HitboxComponent->SetHiddenInGame(false);
-	HitboxComponent->SetNotifyRigidBodyCollision(false);
-	bReplicates = true;
 }
 
 // Called when the game starts or when spawned

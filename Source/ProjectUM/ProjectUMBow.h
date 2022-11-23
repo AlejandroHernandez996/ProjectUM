@@ -15,10 +15,10 @@ UCLASS()
 class PROJECTUM_API AProjectUMBow : public AProjectUMWeapon, public IChannableInterface
 {
 	GENERATED_BODY()
-
-	AProjectUMBow();
 	
 public:
+	AProjectUMBow();
+
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
 		float FireRate;
 

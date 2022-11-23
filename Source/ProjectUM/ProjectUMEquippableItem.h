@@ -30,4 +30,12 @@ public:
 
 	virtual void Use(class AProjectUMCharacter* CharacterUser) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transform")
+		FQuat BaseRotation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transform")
+		FVector BaseLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transform")
+		FVector BaseScale = FVector::One();
 };

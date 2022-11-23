@@ -11,12 +11,9 @@ class PROJECTUM_API AProjectUMWeapon : public AProjectUMEquipment
 {
 	GENERATED_BODY()
 
-public:
 	// Sets default values for this character's properties
+public:
 	AProjectUMWeapon();
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-		class UAnimMontage* AttackMontage;
 
 protected:
 	// Called when the game starts or when spawned
