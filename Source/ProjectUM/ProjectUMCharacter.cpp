@@ -122,6 +122,7 @@ AProjectUMCharacter::AProjectUMCharacter()
 	}
 	
 	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::HAND, "hand_l");
+	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::SHIELD, "hand_r");
 	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::HEAD, "head");
 	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::CHEST, "spine_05");
 	EquipSlotSkeletonMapping.Add(EEquippableSlotsEnum::LEGS, "pelvis");
