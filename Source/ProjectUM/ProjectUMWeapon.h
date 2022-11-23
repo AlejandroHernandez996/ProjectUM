@@ -15,6 +15,9 @@ public:
 	// Sets default values for this character's properties
 	AProjectUMWeapon();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+		class UAnimMontage* AttackMontage;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

@@ -16,11 +16,15 @@ public:
 	AProjectUMEquipment();
 
 	UFUNCTION()
-		USphereComponent* GetHitboxComponent() { return HitboxComponent; };
+		UStaticMeshComponent* GetHitboxComponent() { return MeshComponent; };
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Collisions, meta = (AllowPrivateAccess = "true"))
 		class USphereComponent* HitboxComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Collisions, meta = (AllowPrivateAccess = "true"))
+		class UStaticMeshComponent* MeshComponent;
+
 };

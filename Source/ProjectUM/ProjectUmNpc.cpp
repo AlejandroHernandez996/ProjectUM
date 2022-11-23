@@ -110,7 +110,8 @@ void AProjectUmNpc::Tick(float DeltaTime)
 		}
 		
 	}
-
+	GetMesh()->SetCollisionProfileName("Enemy");
+	GetCapsuleComponent()->SetCollisionProfileName("Enemy");
 }
 
 void AProjectUmNpc::GetLifetimeReplicatedProps(TArray <FLifetimeProperty>& OutLifetimeProps) const
@@ -139,6 +140,10 @@ void AProjectUmNpc::OnHealthUpdate()
 				Inventory->AddItem(Item);
 			}
 			State = ENpcState::DEAD;
+	}
+	if (CurrentHealth == 0.0f) {
+		GetMesh()->SetCollisionProfileName("Enemy");
+		GetCapsuleComponent()->SetCollisionProfileName("Enemy");
 	}
 
 }
@@ -235,4 +240,8 @@ void AProjectUmNpc::OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent,
 {
 	AttackHitbox->SetCollisionProfileName("NoCollision");
 	AttackedCharactersSet.Remove(OtherActor->GetName());
+}
+
+void AProjectUmNpc::PlayNpcAnimMontage_Implementation(UAnimMontage* AnimMontage) {
+	PlayAnimMontage(AnimMontage, 1.0f, FName("start_1"));
 }

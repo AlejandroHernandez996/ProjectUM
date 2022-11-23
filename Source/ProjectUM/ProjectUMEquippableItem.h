@@ -29,4 +29,5 @@ public:
 		EProjectUMWeaponType WeaponType = EProjectUMWeaponType::NONE;
 
 	virtual void Use(class AProjectUMCharacter* CharacterUser) override;
+
 };

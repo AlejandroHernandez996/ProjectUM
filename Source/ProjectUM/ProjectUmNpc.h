@@ -41,7 +41,14 @@ public:
 	UFUNCTION()
 		UProjectUMInventoryComponent* GetInventory() { return Inventory; }
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+		class UAnimMontage* DeathMontage;
 protected:
+	UFUNCTION(NetMulticast, Reliable)
+		void PlayNpcAnimMontage(UAnimMontage* AnimMontage);
+
+	void PlayNpcAnimMontage_Implementation(UAnimMontage* AnimMontage);
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 		class UProjectUMInventoryComponent* Inventory;
 

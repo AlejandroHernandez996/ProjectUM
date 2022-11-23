@@ -32,6 +32,8 @@
 #include "ProjectUMAssetCache.h"
 #include "ProjectUMGameState.h"
 #include "ProjectUMBow.h"
+#include "Components/StaticMeshComponent.h"
+
 
 //////////////////////////////////////////////////////////////////////////
 // AProjectUMCharacter
@@ -72,9 +74,9 @@ AProjectUMCharacter::AProjectUMCharacter()
 	// instead of recompiling to adjust them
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 1000.0f;
+	GetCharacterMovement()->MaxWalkSpeed = 500.0f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
+	GetCharacterMovement()->BrakingDecelerationWalking = 500.0f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -595,16 +597,22 @@ void AProjectUMCharacter::HandleAttack_Implementation()
 		return;
 	}
 
+	UAnimMontage* AttackMontage = MeleeAttackMontage;
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("ATTACK"));
 	if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)){
 		FistComponent->SetCollisionProfileName("Weapon");
 	}
 	else {
-		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetHitboxComponent()->SetCollisionProfileName("Weapon");
+		AProjectUMEquipment* Weapon = EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND);
+		Weapon->GetHitboxComponent()->SetCollisionProfileName("Weapon");
+		UAnimMontage* WeaponAttackMontage = Cast<AProjectUMWeapon>(Weapon)->AttackMontage;
+		if (WeaponAttackMontage) {
+			AttackMontage = WeaponAttackMontage;
+		}
 	}
 	UWorld* World = GetWorld();
 	World->GetTimerManager().SetTimer(AttackingTimer, this, &AProjectUMCharacter::StopAttack, AttackRate, false);
-	PlayProjectUMCharacterAnimMontage(MeleeAttackMontage);
+	PlayProjectUMCharacterAnimMontage(AttackMontage);
 }
 
 void AProjectUMCharacter::PlayProjectUMCharacterAnimMontage_Implementation(UAnimMontage* AnimMontage) {
@@ -640,7 +648,7 @@ void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedCo
 		else {
 			FString msg = "SWORD ATTACK";
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, msg);
-			UGameplayStatics::ApplyDamage(OtherActor, 10.0f, GetInstigator()->Controller, this, UDamageType::StaticClass());
+			UGameplayStatics::ApplyDamage(OtherActor, 10.0f + CurrentStrength, GetInstigator()->Controller, this, UDamageType::StaticClass());
 		}
 		AttackedCharactersSet.Add(OtherActor->GetName());
 	}
@@ -678,7 +686,6 @@ void AProjectUMCharacter::HandleEquip(EEquippableSlotsEnum EquipSlot) {
 		const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
 		AProjectUMEquipment* EquipmentActor = GetWorld()->SpawnActor<AProjectUMEquipment>(EquipmentClassMap.FindRef(EquipSlot));
 		EquippedItemMap.Add(EquipSlot, EquipmentActor);
-		EquipmentActor->GetRootComponent()->SetupAttachment(RootComponent);
 		EquipmentActor->GetRootComponent()->AttachToComponent(GetMesh(), AttachmentRules, EquipSlotSkeletonMapping.FindRef(EquipSlot));
 		EquipmentActor->OwningActor = this;
 		if (EquipSlot == EEquippableSlotsEnum::HAND) {
