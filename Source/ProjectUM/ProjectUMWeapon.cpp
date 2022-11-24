@@ -8,6 +8,7 @@
 // Sets default values
 AProjectUMWeapon::AProjectUMWeapon()
 {
+	
 }
 
 // Called when the game starts or when spawned
