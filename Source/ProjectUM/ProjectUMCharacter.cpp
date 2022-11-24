@@ -194,6 +194,10 @@ void AProjectUMCharacter::Tick(float DeltaTime)
 
 }
 
+void AProjectUMCharacter::Dance_Implementation() {
+	PlayProjectUMCharacterAnimMontage(DanceMontage);
+}
+
 void AProjectUMCharacter::HoldPrimaryInput_Implementation() {
 	if (Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)
 		&& Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->WeaponType == EProjectUMWeaponType::BOW)
@@ -283,6 +287,9 @@ void AProjectUMCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AProjectUMCharacter::StartInteracting);
 	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AProjectUMCharacter::OpenInventory);
 	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AProjectUMCharacter::BroadcastInventory);
+
+	PlayerInputComponent->BindAction("Dance", IE_Pressed, this, &AProjectUMCharacter::Dance);
+
 
 }
 

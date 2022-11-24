@@ -136,6 +136,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
 		class UAnimMontage* SpinMontange;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+		class UAnimMontage* DanceMontage;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
 		class USphereComponent* FistComponent;
 
@@ -409,6 +412,10 @@ protected:
 		void ReleasePrimaryInput();
 
 		void ReleasePrimaryInput_Implementation();
+
+	UFUNCTION(Server, Reliable)
+		void Dance();
+	void Dance_Implementation();
 
 
 public:
