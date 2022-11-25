@@ -54,7 +54,7 @@ AProjectUMCharacter::AProjectUMCharacter()
 	bIsFiringWeapon = false;
 
 	//Initialize attack rate
-	AttackRate = 1.0f;
+	AttackRate = 2.5f;
 	bIsAttacking = false;
 
 	EquipRate = .25f;
@@ -200,7 +200,7 @@ void AProjectUMCharacter::Dance_Implementation() {
 
 void AProjectUMCharacter::HoldPrimaryInput_Implementation() {
 	if (Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)
-		&& Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->WeaponType == EProjectUMWeaponType::BOW)
+		&& (Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->WeaponType == EProjectUMWeaponType::BOW || Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->ToolType == EToolTypeEnum::FISHING_POLE))
 	{
 		IChannableInterface* ChannableObject = Cast<IChannableInterface>(EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND));
 		ChannableObject->Execute_Channel(ChannableObject->_getUObject());
@@ -209,7 +209,7 @@ void AProjectUMCharacter::HoldPrimaryInput_Implementation() {
 
 void AProjectUMCharacter::ReleasePrimaryInput_Implementation() {
 	if (Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)
-		&& Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->WeaponType == EProjectUMWeaponType::BOW)
+		&& (Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->WeaponType == EProjectUMWeaponType::BOW || Inventory->EquipmentMap.FindRef(EEquippableSlotsEnum::HAND)->ToolType == EToolTypeEnum::FISHING_POLE))
 	{
 		IChannableInterface* ChannableObject = Cast<IChannableInterface>(EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND));
 		ChannableObject->Execute_Release(ChannableObject->_getUObject());
@@ -664,13 +664,6 @@ void AProjectUMCharacter::OnAttackOverlapBegin(UPrimitiveComponent* OverlappedCo
 
 void AProjectUMCharacter::OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (!EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)) {
-		FistComponent->SetCollisionProfileName("NoCollision");
-	}
-	else {
-		EquippedItemMap.FindRef(EEquippableSlotsEnum::HAND)->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
-	}
-	AttackedCharactersSet.Remove(OtherActor->GetName());
 }
 
 void AProjectUMCharacter::StartEquipping(EEquippableSlotsEnum EquipSlot)
@@ -698,6 +691,7 @@ void AProjectUMCharacter::HandleEquip(EEquippableSlotsEnum EquipSlot) {
 		EquippedItemMap.Add(EquipSlot, EquipmentActor);
 		EquipmentActor->GetRootComponent()->AttachToComponent(GetMesh(), AttachmentRules, EquipSlotSkeletonMapping.FindRef(EquipSlot));
 		EquipmentActor->OwningActor = this;
+		EquipmentActor->OwningCharacter = this;
 		if (EquipSlot == EEquippableSlotsEnum::HAND) {
 			EquipmentActor->GetHitboxComponent()->SetCollisionProfileName("NoCollision");
 			EquipmentActor->GetHitboxComponent()->SetNotifyRigidBodyCollision(false);

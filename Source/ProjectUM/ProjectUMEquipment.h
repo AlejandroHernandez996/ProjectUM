@@ -15,13 +15,11 @@ public:
 	AProjectUMEquipment();
 
 	AActor* OwningActor;
+	class AProjectUMCharacter* OwningCharacter;
 	UFUNCTION()
 		UStaticMeshComponent* GetHitboxComponent() { return MeshComponent; };
 
-	UFUNCTION(NetMulticast, Reliable)
-		void SetMesh(UStaticMesh* Mesh, FQuat Rot, FVector Loc, FVector Scale);
-
-	void SetMesh_Implemntation(UStaticMesh* Mesh, FQuat Rot, FVector Loc, FVector Scale);
+	void SetMesh(UStaticMesh* Mesh, FQuat Rot, FVector Loc, FVector Scale);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

@@ -86,6 +86,7 @@ void AProjectUmProjectile::OnProjectileImpact(UPrimitiveComponent* HitComponent,
 	{
 		UGameplayStatics::ApplyPointDamage(OtherActor, Damage, NormalImpulse, Hit, GetInstigator()->Controller, this, DamageType);
 	}
-
-	Destroy();
+	if (bOnImpactDestroy) {
+		Destroy();
+	}
 }
