@@ -4,6 +4,7 @@
 #include "ProjectUMBow.h"
 #include "ProjectUMCharacter.h"
 #include "ProjectUMArrowProjectile.h"
+#include "Camera/CameraComponent.h"
 #include "RenderCore.h"
 
 AProjectUMBow::AProjectUMBow() {
@@ -50,8 +51,16 @@ void AProjectUMBow::HandleFire()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString(TEXT("FIRE ARROW")));
 	ChannelState = EChanneledStateEnum::IDLE;
-	FVector spawnLocation = OwningActor->GetActorLocation() + (OwningActor->GetActorRotation().Vector() * 200.0) + (OwningActor->GetActorUpVector() * 50.0f);
-	FRotator spawnRotation = OwningActor->GetActorRotation();
+
+	FVector CameraLocation = OwningCharacter->GetActorLocation();
+	FRotator CameraRotation = OwningCharacter->GetFollowCamera()->GetComponentRotation();
+	FVector SpawnLocation = CameraLocation + FTransform(CameraRotation).TransformVector(FVector(200.0f,0.0f, 50.0f));
+
+	// Skew the aim to be slightly upwards.
+	FRotator MuzzleRotation = CameraRotation;
+	MuzzleRotation.Pitch += 10.0f;
+	FVector spawnLocation = SpawnLocation;
+	FRotator spawnRotation = MuzzleRotation;
 
 	FActorSpawnParameters spawnParameters;
 	spawnParameters.Instigator = OwningActor->GetInstigator();
