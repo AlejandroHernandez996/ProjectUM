@@ -8,6 +8,7 @@ class UBoxComponent;
 class AProjectUMCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FArenaTimersUpdateEvent, const TArray<float>&, _Timers);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOutboundTimersUpdateEvent, const TArray<float>&, _Timers);
 
 UCLASS()
 class PROJECTUM_API AArenaActor : public AActor
@@ -27,6 +28,9 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "Stat Update")
 		FArenaTimersUpdateEvent OnArenaTimerUpdate;
 
+	UPROPERTY(BlueprintAssignable, Category = "Stat Update")
+		FOutboundTimersUpdateEvent OnOutboundTimersUpdate;
+
 	UFUNCTION()
 	void OnPlayerEnterArena(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
@@ -39,10 +43,11 @@ protected:
 
 	void StartCountdown();
 	void CountdownTick();
+	void OutOfBoundsTick(int32 PlayerIndex);
 
 	bool AreAllPlayersInArena() const;
 	bool IsPlayerOutOfBounds(AProjectUMCharacter* Player) const;
-	void HandlePlayerOutOfBounds(AProjectUMCharacter* Player);
+	void HandlePlayerOutOfBounds(AProjectUMCharacter* Player, int32 PlayerIndex);
 	void HandlePlayerInBounds(AProjectUMCharacter* Player);
 
 	void LogMessage(const FString& Message);
@@ -54,7 +59,7 @@ protected:
 	bool bIsCountdownStarted;
 
 	UPROPERTY(VisibleInstanceOnly, Category = "Arena", ReplicatedUsing = OnRep_CountdownTimer)
-		float CountdownTimer;
+		float CountdownTimer = -1.0f;
 
 	UFUNCTION()
 		void OnRep_CountdownTimer();
@@ -63,6 +68,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Arena")
 	float OutOfBoundsTimerDuration;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "Arena", ReplicatedUsing = OnRep_OutboundTicks)
+		TArray<float> OutboundTicks = {-1.0f, -1.0f };
+
+	UFUNCTION()
+		void OnRep_OutboundTicks();
 
 	FTimerHandle CountdownTimerHandle;
 	TMap<AProjectUMCharacter*, FTimerHandle> OutOfBoundsTimerHandlers;

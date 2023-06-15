@@ -15,8 +15,10 @@ AArenaActor::AArenaActor()
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Create the collision component
-	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComponent"));
-	RootComponent = CollisionComponent;
+	if (HasAuthority()) {
+		CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComponent"));
+		RootComponent = CollisionComponent;
+	}
 
 	// Bind collision events
 	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AArenaActor::OnPlayerEnterArena);
@@ -51,13 +53,14 @@ void AArenaActor::Tick(float DeltaTime)
 
 		}
 
+		int32 PlayerIndex = 0;
 		// Remove the players from the out-of-bounds set
 		for (AProjectUMCharacter* Player : PlayersToRemove)
 		{
 			OutOfBoundsPlayers.Remove(Player);
 			LogMessage(FString::Printf(TEXT("Player %s removed from out of bounds players and will be handled accordingly"), *Player->GetName()));
-			HandlePlayerOutOfBounds(Player);
-
+			HandlePlayerOutOfBounds(Player, PlayerIndex);
+			PlayerIndex++;
 		}
 
 
@@ -76,11 +79,19 @@ void AArenaActor::OnRep_CountdownTimer()
 	OnArenaTimerUpdate.Broadcast({ CountdownTimer });
 }
 
+void AArenaActor::OnRep_OutboundTicks()
+{
+	OnOutboundTimersUpdate.Broadcast(OutboundTicks);
+}
+
+
 void AArenaActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AArenaActor, CountdownTimer);
+	DOREPLIFETIME(AArenaActor, OutboundTicks);
+
 }
 
 void AArenaActor::OnPlayerEnterArena(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -186,27 +197,69 @@ void AArenaActor::CountdownTick()
 	}
 }
 
+void AArenaActor::OutOfBoundsTick(int32 PlayerIndex)
+{
+	if (!bIsFightStarted) return;
+	if (OutboundTicks[PlayerIndex] > 0.0f)
+	{
+		// Log the countdown timer
+		OutboundTicks[PlayerIndex]--;
+	}
+	else
+	{
+		// Stop the countdown timer
+		GetWorldTimerManager().ClearTimer(OutOfBoundsTimerHandlers[PlayersInFight[PlayerIndex]]);
+		LogMessage(FString::Printf(TEXT("Player %s lost due to being out of bounds for too long."), *PlayersInFight[PlayerIndex]->GetName()));
+		EndFight(PlayersInFight[PlayerIndex]);
+	}
+}
+
 bool AArenaActor::AreAllPlayersInArena() const
 {
 	return PlayersInArena.Num() == 2;
 }
 
-void AArenaActor::HandlePlayerOutOfBounds(AProjectUMCharacter* Player)
+void AArenaActor::HandlePlayerOutOfBounds(AProjectUMCharacter* Player, int32 PlayerIndex)
 {
 	LogMessage(FString::Printf(TEXT("Player %s timer for out of bounds starting."), *Player->GetName()));
+	int32 CharacterIndex = INDEX_NONE;
+
+	for (int32 Index = 0; Index < PlayersInFight.Num(); ++Index)
+	{
+		if (PlayersInFight[Index] == Player)
+		{
+			CharacterIndex = Index;
+			break;
+		}
+	}
+	if (CharacterIndex == INDEX_NONE) return;
+
+	OutboundTicks[CharacterIndex] = 3.0f;
 	// Start the out of bounds timer for the player
-	GetWorldTimerManager().SetTimer(OutOfBoundsTimerHandlers[Player], [this, Player]()
+	GetWorldTimerManager().SetTimer(OutOfBoundsTimerHandlers[Player], [this, Player, CharacterIndex]()
 		{
 			if (!bIsFightStarted) return;
 			// Player has been out of bounds for the required duration, handle loss condition here
-			LogMessage(FString::Printf(TEXT("Player %s lost due to being out of bounds for too long."), *Player->GetName()));
-			EndFight(Player);
-		}, 3.0f, false);
+			OutOfBoundsTick(CharacterIndex);
+		}, 1.0f, true);
 }
 
 void AArenaActor::HandlePlayerInBounds(AProjectUMCharacter* Player)
 {
-	// Stop the out of bounds timer for the player
+	int32 CharacterIndex = INDEX_NONE;
+
+	for (int32 Index = 0; Index < PlayersInFight.Num(); ++Index)
+	{
+		if (PlayersInFight[Index] == Player)
+		{
+			CharacterIndex = Index;
+			break;
+		}
+	}
+
+	if (CharacterIndex == INDEX_NONE) return;
+
+	OutboundTicks[CharacterIndex] = 0.0f;
 	LogMessage(FString::Printf(TEXT("Player %s is inbounds so clearing timer for out of bounds"), *Player->GetName()));
 	GetWorldTimerManager().ClearTimer(OutOfBoundsTimerHandlers[Player]);
 }
@@ -215,9 +268,12 @@ void AArenaActor::ResetArenaState(AProjectUMCharacter* LosingPlayer)
 {
 	bIsFightStarted = false;
 	bIsCountdownStarted = false;
-	CountdownTimer = 10.0f;
+	CountdownTimer = -1.0f;
 	PlayersInArena.Remove(LosingPlayer);
+	PlayersInFight.Empty();
+	OutOfBoundsPlayers.Empty();
 	OutOfBoundsTimerHandlers.Empty();
+	OutboundTicks = { -1.0f, -1.0f };
 
 	// Log that the arena state is reset
 	LogMessage(TEXT("Arena state reset."));
