@@ -4,20 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "InteractableObjectInterface.h"
-#include "CharacterStatEnum.h"
-#include "ProjectUMInventoryComponent.h"
 #include "Http.h"
+#include "Containers/Map.h"
+#include "SkillEnums.h"
+#include "Components/BoxComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "ProjectUMCharacter.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNpcCorpseInteracted, const TArray<FItemStruct>&, _Items);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNpcCorpseInteractedOpenLootWidget);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExitLootRange);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventoryOpenDisplayItems, const TArray<FItemStruct>&, _InventoryItems, const TArray<FItemStruct>&, _EquippedItems);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryOpen);
-
+class UNiagaraSystem;
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FHealthAndBlockUpdateEvent, const TArray<float>&, _Items);
 UCLASS(config=Game)
-class AProjectUMCharacter : public ACharacter, public IInteractableObjectInterface
+class AProjectUMCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -27,68 +25,51 @@ class AProjectUMCharacter : public ACharacter, public IInteractableObjectInterfa
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FollowCamera;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Iventory", meta = (AllowPrivateAccess = "true"))
-		class UProjectUMInventoryComponent* Inventory;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Iventory", meta = (AllowPrivateAccess = "true"))
-		class UProjectUMInventoryComponent* LootingInventory;
-
-	struct FProjectUMCharacterStatsStruct* Stats;
-
-	TMap<ECharacterStatEnum, float> MaxStatsMap;
-
-	TMap<ECharacterStatEnum, float> CurrentStatsMap;
-
-	TMap<ECharacterStatEnum, float> BaseStatsMap;
-
-	void InitStats();
-
 	void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 
+	void ProcessAnimationQueue();
+
 public:
+	UPROPERTY(BlueprintAssignable, Category = "Stat Update")
+		FHealthAndBlockUpdateEvent OnHealthAndBlockUpdate;
+
+	UFUNCTION(Client, Reliable)
+		void UpdateHealthAndBlockMeter();
+
+	void UpdateHealthAndBlockMeter_Implementation();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_MaxBlockMeter)
+		float BlockMeterMax = 100.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Block", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_CurrentBlockMeter)
+		float BlockMeterCurrent = 100.0f;
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_MaxHealth)
+		float MaxHealth;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentHealth)
+		float CurrentHealth;
+
+	void StartAnimationMontage(UAnimMontage* AnimMontage);
+	TQueue<UAnimMontage*> AnimationQueue;
+
+	UFUNCTION(NetMulticast, Reliable)
+		void PlayProjectUMCharacterAnimMontage(UAnimMontage* AnimMontage, FName StartSectionName);
+
+	void PlayProjectUMCharacterAnimMontage_Implementation(UAnimMontage* AnimMontage, FName StartSectionName);
+
+	UFUNCTION(NetMulticast, Reliable)
+		void PlayAnimationMontageWithOverride(UAnimMontage* Montage);
+
+	void PlayAnimationMontageWithOverride_Implementation(UAnimMontage* Montage);
+
 	UFUNCTION()
 		class UCameraComponent* GetFollowCamera() {
 			return FollowCamera;
 		}
-	UFUNCTION(BlueprintPure)
-		float GetCurrentStat(ECharacterStatEnum Stat) {
-		return CurrentStatsMap[Stat];
-	}
 
-	UFUNCTION(BlueprintPure)
-		float GetMaxStat(ECharacterStatEnum Stat) { 
-		return MaxStatsMap[Stat];
-	}
-
-	UFUNCTION(BlueprintPure)
-		float GetBaseStat(ECharacterStatEnum Stat) { return BaseStatsMap.FindRef(Stat); }
-
-public:
 	AProjectUMCharacter();
-
-	UFUNCTION()
-		void SetLootingInventory(UProjectUMInventoryComponent* LootInventory) {
-			LootingInventory = LootInventory;
-		}
-
-	UFUNCTION()
-		UProjectUMInventoryComponent* GetInventory() { return Inventory; }
-
-	UPROPERTY(BlueprintAssignable, Category = "Interaction")
-		FOnNpcCorpseInteracted OnNpcCorpseInteracted;
-
-	UPROPERTY(BlueprintAssignable, Category = "Interaction")
-		FOnNpcCorpseInteractedOpenLootWidget OnNpcCorpseInteractedOpenLootWidget;
-
-	UPROPERTY(BlueprintAssignable, Category = "Inventory")
-		FOnInventoryOpenDisplayItems OnInventoryOpenDisplayItems;
-
-	UPROPERTY(BlueprintAssignable, Category = "Inventory")
-		FOnInventoryOpen OnInventoryOpen;
-
-
-	UPROPERTY(BlueprintAssignable, Category = "Inventory")
-		FOnExitLootRange OnExitLootRange;
 
 	virtual void BeginPlay() override;
 
@@ -113,83 +94,69 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		void SetCurrentMaxHealth(float healthValue);
 
-	UFUNCTION(BlueprintCallable, Category = "Health")
-		void SetCurrentStat(ECharacterStatEnum Stat, float Value);
+	UFUNCTION(BlueprintPure, Category = "BlockMeter")
+		FORCEINLINE float GetMaxBlockMeter() const { return BlockMeterMax; }
 
-	UFUNCTION(BlueprintCallable, Category = "Health")
-		void SetMaxStat(ECharacterStatEnum Stat, float Value);
+	UFUNCTION(BlueprintPure, Category = "BlockMeter")
+		FORCEINLINE float GetCurrentBlockMeter() const { return BlockMeterCurrent; }
 
-	UFUNCTION()
-		void IncreaseStats(TMap<ECharacterStatEnum, float> Stats);
-	UFUNCTION()
-		void DecreaseStats(TMap<ECharacterStatEnum, float> Stats);
+	UFUNCTION(BlueprintCallable, Category = "BlockMeter")
+		void SetCurrentBlockMeter(float BlockMeterValue);
+
+	UFUNCTION(BlueprintCallable, Category = "BlockMeter")
+		void SetMaxBlockMeter(float BlockMeterValue);
 
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	UFUNCTION(BlueprintPure, Category = "Attack")
-		FORCEINLINE bool IsAttacking() const { return bIsAttacking; }
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-		class UAnimMontage* MeleeAttackMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-		class UAnimMontage* SpinMontange;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
 		class UAnimMontage* DanceMontage;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
-		class USphereComponent* FistComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+		class UAnimMontage* BlockMontage;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collisions, meta = (AllowPrivateAccess = "true"))
-		class USphereComponent* InteractComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+		class UAnimMontage* EndBlockMontage;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Instanced, Category = "Inventory")
-		TMap<EEquippableSlotsEnum, AProjectUMEquipment*> EquippedItemMap;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+		TArray<class UAnimMontage*> HitstunMontages;
+	int32 HitstunIndex;
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "Block", meta = (AllowPrivateAccess = "true"))
+		bool bIsBlocking;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-		TMap<EEquippableSlotsEnum, TSubclassOf<AProjectUMEquipment>> EquipmentClassMap;
+	UPROPERTY(EditDefaultsOnly, Category = "Hitstun")
+		float HitstunDuration;
+
+	UFUNCTION()
+		void StartBlock();
+
+	UFUNCTION(Server, Reliable)
+		void HandleStartBlock();
+	void HandleStartBlock_Implementation();
+
+	UFUNCTION()
+		void StopBlock();
+
+	UFUNCTION(Server, Reliable)
+		void HandleStopBlock();
+	void HandleStopBlock_Implementation();
+
+	UFUNCTION()
+		void OnBlockMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 
 	UPROPERTY()
-		TMap<EEquippableSlotsEnum, FName> EquipSlotSkeletonMapping;
+		FTimerHandle HitstunTimerHandle;
 
-		TSet<IInteractableObjectInterface*> InteractableObjects;
+	UPROPERTY()
+		bool bIsInHitstun;
 
-	UFUNCTION()
-		TSubclassOf<AProjectUMEquipment> GetEquipmentClass(EEquippableSlotsEnum EquipmentSlot) { return EquipmentClassMap[EquipmentSlot]; }
+	void EndHitstun()
+	{
+		bIsInHitstun = false;
+	}
 
-	UFUNCTION()
-		AProjectUMEquipment* GetEquippedItem(EEquippableSlotsEnum EquipmentSlot) { return EquippedItemMap[EquipmentSlot]; }
-
-	UFUNCTION()
-		void OnAttackHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
-	UFUNCTION()
-		void OnAttackOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-		void OnAttackOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	UFUNCTION()
-		void OnInteractOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-		void OnInteractOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	UFUNCTION()
-	void AttachEquipment(TSubclassOf<AProjectUMEquipment> Equipment, EEquippableSlotsEnum EquipSlot);
-
-	UFUNCTION()
-	void DeAttachEquipment(EEquippableSlotsEnum EquipSlot);
-
-
-	UFUNCTION(Server, Reliable, Category = "Inventory")
-		void AddItemToInventory(class UProjectUMItem* Item);
-
-	void AddItemToInventory_Implementation(class UProjectUMItem* Item);
-
-protected:
 	void MoveForward(float Value);
 
 	void MoveRight(float Value);
@@ -212,239 +179,86 @@ protected:
 
 	void OnHealthUpdate();
 
-	void OnCurrentStatUpdate(ECharacterStatEnum Stat, float Value);
-
-	void OnMaxStatUpdate(ECharacterStatEnum Stat, float Value);
-	
-	UFUNCTION(Client, Reliable)
-	void OnCurrentStatUpdateClient(ECharacterStatEnum Stat, float Value);
-
-	UFUNCTION(Client, Reliable)
-	void OnMaxStatUpdateClient(ECharacterStatEnum Stat, float Value);
-
-	void OnCurrentStatUpdateClient_Implementation(ECharacterStatEnum Stat, float Value);
-
-	void OnMaxStatUpdateClient_Implementation(ECharacterStatEnum Stat, float Value);
-
-	UFUNCTION()
-		void OnRep_CurrentMana();
-
-	UFUNCTION()
-		void OnRep_MaxMana();
-
-	UFUNCTION()
-		void OnRep_CurrentStrength();
-
-	UFUNCTION()
-		void OnRep_CurrentAgility();
-
-	UFUNCTION()
-		void OnRep_CurrentWisdom();
-
-	UFUNCTION()
-		void OnRep_CurrentIntellect();
-
-
 	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
 		float BaseMaxHealth;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float BaseHealth;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float BaseMana;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float BaseAgility;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float BaseStrength;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float BaseIntellect;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float BaseWisdom;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_MaxHealth)
-		float MaxHealth;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_MaxMana)
-		float MaxMana;							   
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float MaxAgility;						   
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float MaxStrength;						  
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float MaxIntellect;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", Replicated)
-		float MaxWisdom;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentHealth)
-		float CurrentHealth;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentMana)
-		float CurrentMana;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentAgility)
-		float CurrentAgility;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentStrength)
-		float CurrentStrength;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentIntellect)
-		float CurrentIntellect;
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", ReplicatedUsing = OnRep_CurrentWisdom)
-		float CurrentWisdom;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay|Projectile")
-		TSubclassOf<class AProjectUmProjectile> ProjectileClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
-		float FireRate;
-
-	FTimerHandle FiringTimer;
-
-	bool bIsFiringWeapon;
-
-	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-		void StartFire();
-
-	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-		void StopFire();
-
-	UFUNCTION(Server, Reliable)
-		void HandleFire();
-
-	UPROPERTY()
-		TSet<FString> AttackedCharactersSet;
-
-	FTimerHandle AttackingTimer;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
-		float AttackRate;
-
-	bool bIsAttacking;
-
-	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-		void StartAttack();
-
-	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-		void StopAttack();
-
-	UFUNCTION(Server, Reliable)
-		void HandleAttack();
-
-	void HandleAttack_Implementation();
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
-		float EquipRate;
-	FTimerHandle EquippingTimer;
-
-	bool bIsEquipping;
-
-	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-		void StartEquipping(EEquippableSlotsEnum EquipSlot);
-
-	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-		void StopEquipping();
 
 	UFUNCTION()
-		void HandleEquip(EEquippableSlotsEnum EquipSlot);
+		void OnRep_CurrentBlockMeter();
 
-	UFUNCTION(NetMulticast, Reliable)
-		void PlayProjectUMCharacterAnimMontage(UAnimMontage* AnimMontage);
+	UFUNCTION()
+		void OnRep_MaxBlockMeter();
 
+	void OnBlockMeterUpdate();
 
-	UPROPERTY(EditDefaultsOnly, Category = "Item")
-		float UseItemRate;
+	
 
-	FTimerHandle UseItemTimer;
+	UPROPERTY(BlueprintReadOnly, Category = "Block", meta = (AllowPrivateAccess = "true"))
+		float BlockRegenerationRate = 1.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+		TMap<ESkillEnums, UAnimMontage*> SkillAnimMontageMap;
 
-	bool bIsUsingItem;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+		TMap<ESkillEnums, UBoxComponent*> SkillHurtboxes;
 
-	UFUNCTION(BlueprintCallable, BlueprintCallable, Category = "Item")
-		void StartUsingItem(int32 ItemId);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
+		UNiagaraSystem* SparkEffectComponent;
 
-	UFUNCTION(BlueprintCallable, Category = "Item")
-		void StopUsingItem();
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		virtual void StartJump();
 
-	UFUNCTION(Server, Reliable, Category = "Item")
-		void HandleUseItemServer(int32 ItemId);
+	FTimerHandle PrimaryAttackTimer;
 
-	void HandleUseItemServer_Implementation(int32 ItemId);
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+		TArray<float> PrimaryAttackRates;
 
-	UFUNCTION(BlueprintCallable, BlueprintCallable, Category = "Item")
-		void StartDroppingItem(int32 ItemId);
+	int32 PrimaryAttackIndex;
 
-	UFUNCTION(BlueprintCallable, Category = "Item")
-		void StopDroppingItem();
+	bool bIsPrimaryAttacking;
 
-	UFUNCTION(Server, Reliable, Category = "Item")
-		void HandleDropItemServer(int32 ItemId);
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		void StartPrimaryAttack();
 
-	void HandleDropItemServer_Implementation(int32 ItemId);
-
-	UFUNCTION(BlueprintCallable, BlueprintCallable, Category = "Item")
-		void StartLootingItem(int32 ItemId);
-
-	UFUNCTION(BlueprintCallable, Category = "Item")
-		void StopLootingItem();
-
-	UFUNCTION(Server, Reliable, Category = "Item")
-		void HandleLootingItem(int32 ItemId);
-
-	void HandleLootingItem_Implementation(int32 ItemId);
-
-	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
-		float InteractRate = .25f;
-
-	FTimerHandle InteractTimer;
-
-	bool bIsInteracting;
-
-	UFUNCTION(BlueprintCallable, Category = "Interaction")
-		void StartInteracting();
-
-	UFUNCTION(BlueprintCallable, Category = "Interaction")
-		void StopInteracting();
-
-	UFUNCTION(Server, Reliable, Category = "Interaction")
-		void HandleInteraction();
-
-	void HandleInteraction_Implementation();
-
-	UFUNCTION(Server, Reliable, Category = "Input")
-		void HoldPrimaryInput();
-
-		void HoldPrimaryInput_Implementation();
-
-	UFUNCTION(Server, Reliable, Category = "Input")
-		void ReleasePrimaryInput();
-
-		void ReleasePrimaryInput_Implementation();
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		virtual void StopPrimaryAttack();
 
 	UFUNCTION(Server, Reliable)
-		void Dance();
-	void Dance_Implementation();
+		virtual void HandlePrimaryAttack();
 
+	virtual void HandlePrimaryAttack_Implementation();
+
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		void StartSkill(int32 SkillIndex);
+
+	UFUNCTION(Server, Reliable)
+		virtual void HandleSkill(int32 SkillIndex);
+
+	virtual void HandleSkill_Implementation(int32 SkillIndex);
+
+	virtual void StopSkill(int32 SkillIndex);
+
+	bool bIsDashing;
+
+	float DashRate;
+
+	FTimerHandle DashTimer;
+
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		void StartDash();
+
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+		virtual void StopDash();
+
+	UFUNCTION(Server, Reliable)
+		virtual void HandleDash();
+
+	virtual void HandleDash_Implementation();
 
 public:
-	UFUNCTION(Client, Reliable, Category = "Interaction")
-		void BroadcastNpcLoot(const TArray<FItemStruct>& LootItems);
+	UFUNCTION(Server, Reliable)
+		void Dance();
 
-	void BroadcastNpcLoot_Implementation(const TArray<FItemStruct>& LootItems);
-
-	UFUNCTION(Client, Reliable, Category = "Interaction")
-		void OpenLoot();
-
-	void OpenLoot_Implementation();
-
-	UFUNCTION(Client, Reliable, Category = "Interaction")
-		void CloseLoot();
-
-	void CloseLoot_Implementation();
-
-	UFUNCTION(Server, Reliable, Category = "Interaction")
-		void BroadcastInventory();
-
-	void BroadcastInventory_Implementation();
-
-	UFUNCTION(Client, Reliable, Category = "Interaction")
-		void BroadcastInventoryToClient(const TArray<FItemStruct>& InventoryItems, const TArray<FItemStruct>& EquippedItems);
-
-	void BroadcastInventoryToClient_Implementation(const TArray<FItemStruct>& InventoryItems, const TArray<FItemStruct>& EquippedItems);
-
-	void OpenInventory();
+	void Dance_Implementation();
 
 	void Disconnect();
 
@@ -454,17 +268,15 @@ public:
 	void DisconnectClient_Implementation();
 
 protected:
-	void Interact_Implementation(AProjectUMCharacter* Interactor) override;
-
-	UFUNCTION(Server, Reliable)
-		void SpawnItems();
-
-	void SpawnItems_Implementation();
-
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	float lastTick;
+	TMap<int32, ESkillEnums> SkillIndexToEnumMap;
+	TMap<ESkillEnums, float> SkillCooldowns;
+	TMap<ESkillEnums, bool> SkillOnCooldown;
+	TMap<ESkillEnums, FTimerHandle> SkillTimers;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components", meta = (EditInline))
+	TMap<FName, UBoxComponent*> HitboxAppendageMap;
 
 };
 

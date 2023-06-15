@@ -3,7 +3,6 @@
 #include "ProjectUMGameMode.h"
 #include "ProjectUMCharacter.h"
 #include "ProjectUMGameState.h"
-#include "ProjectUMItem.h"
 #include "Json.h"
 #include "UObject/ConstructorHelpers.h"
 

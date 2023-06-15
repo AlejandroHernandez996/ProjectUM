@@ -19,9 +19,4 @@ class PROJECTUM_API AProjectUMGameState : public AGameStateBase
 public:
 	AProjectUMGameState();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Cache")
-		class UProjectUMAssetCache* AssetCache;
-
-	UFUNCTION(BlueprintCallable, Category = "Game State")
-		class UProjectUMItem* GetItemById(int32 ItemId);
 };
